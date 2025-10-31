@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod array_tests;
+
 use crate::layout::bits::Bits;
 use crate::layout::stripe::traits::stripe::Stripe;
 use crate::retention::disk::Disk;
