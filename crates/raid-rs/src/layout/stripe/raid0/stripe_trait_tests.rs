@@ -4,7 +4,7 @@ use crate::layout::stripe::traits::stripe::Stripe;
 
 #[test]
 fn stripe_data_const_matches_drive_count() {
-    const DATA: usize = <RAID0<3, 4> as Stripe<4>>::DATA;
+    const DATA: usize = <RAID0<3, 4> as Stripe<3, 4>>::DATA;
     assert_eq!(DATA, 3);
 }
 
@@ -15,7 +15,7 @@ fn stripe_write_and_read_cover_all_drives() {
 
     r.write(&values);
 
-    let mut out = [Bits::<2>::zero(); <RAID0<2, 2> as Stripe<2>>::DATA];
+    let mut out = [Bits::<2>::zero(); <RAID0<2, 2> as Stripe<2, 2>>::DATA];
     r.read(&mut out);
 
     assert_eq!(out, values);

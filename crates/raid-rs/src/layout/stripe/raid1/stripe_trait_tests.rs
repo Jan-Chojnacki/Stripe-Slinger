@@ -4,7 +4,7 @@ use crate::layout::stripe::traits::stripe::Stripe;
 
 #[test]
 fn stripe_data_const_is_one() {
-    const DATA: usize = <RAID1<2, 4> as Stripe<4>>::DATA;
+    const DATA: usize = <RAID1<2, 4> as Stripe<2, 4>>::DATA;
     assert_eq!(DATA, 1);
 }
 
@@ -19,7 +19,7 @@ fn stripe_write_mirrors_across_all_drives_then_read_returns_value() {
         assert_eq!(*drive, value);
     }
 
-    let mut out = [Bits::<4>::zero(); <RAID1<3, 4> as Stripe<4>>::DATA];
+    let mut out = [Bits::<4>::zero(); <RAID1<3, 4> as Stripe<3, 4>>::DATA];
     r.read(&mut out);
     assert_eq!(out, [value]);
 }

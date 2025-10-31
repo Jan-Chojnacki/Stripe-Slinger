@@ -1,2 +1,2 @@
-mod bits;
-mod stripe;
+pub mod bits;
+pub mod stripe;

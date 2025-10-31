@@ -4,7 +4,7 @@ use crate::layout::stripe::traits::stripe::Stripe;
 
 #[test]
 fn stripe_data_const_matches_d_minus_one() {
-    const DATA: usize = <RAID3<4, 4> as Stripe<4>>::DATA;
+    const DATA: usize = <RAID3<4, 4> as Stripe<4, 4>>::DATA;
     assert_eq!(DATA, 3);
 }
 
@@ -28,7 +28,7 @@ fn stripe_write_sets_data_and_parity_then_read_returns_same() {
     expected_p ^= d2;
     assert_eq!(r.0[RAID3::<4, 4>::PARITY_IDX], expected_p);
 
-    let mut out = [Bits::<4>::zero(); <RAID3<4, 4> as Stripe<4>>::DATA];
+    let mut out = [Bits::<4>::zero(); <RAID3<4, 4> as Stripe<4, 4>>::DATA];
     r.read(&mut out);
     assert_eq!(out, [d0, d1, d2]);
 }

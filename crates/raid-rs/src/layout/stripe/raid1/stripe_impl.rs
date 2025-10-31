@@ -3,8 +3,9 @@ use crate::layout::stripe::raid1::RAID1;
 use crate::layout::stripe::traits::restore::Restore;
 use crate::layout::stripe::traits::stripe::Stripe;
 
-impl<const D: usize, const N: usize> Stripe<N> for RAID1<D, N> {
+impl<const D: usize, const N: usize> Stripe<D, N> for RAID1<D, N> {
     const DATA: usize = 1;
+    const DISKS: usize = D;
 
     fn write(&mut self, data: &[Bits<N>]) {
         assert_eq!(
@@ -19,6 +20,18 @@ impl<const D: usize, const N: usize> Stripe<N> for RAID1<D, N> {
         }
     }
 
+    fn write_raw(&mut self, data: &[Bits<N>]) {
+        assert_eq!(
+            data.len(),
+            Self::DISKS,
+            "RAID0 expects {} chunks.",
+            Self::DISKS
+        );
+        for i in 0..Self::DISKS {
+            self.0[i] = data[i];
+        }
+    }
+
     fn read(&self, out: &mut [Bits<N>]) {
         assert_eq!(
             out.len(),
@@ -28,6 +41,18 @@ impl<const D: usize, const N: usize> Stripe<N> for RAID1<D, N> {
         );
         if D > 0 {
             out[0] = self.0[0];
+        }
+    }
+
+    fn read_raw(&self, out: &mut [Bits<N>]) {
+        assert_eq!(
+            out.len(),
+            Self::DISKS,
+            "Output buffer must be {} chunks.",
+            Self::DISKS
+        );
+        for i in 0..Self::DISKS {
+            out[i] = self.0[i];
         }
     }
 
