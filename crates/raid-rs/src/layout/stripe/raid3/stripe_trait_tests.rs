@@ -34,6 +34,26 @@ fn stripe_write_sets_data_and_parity_then_read_returns_same() {
 }
 
 #[test]
+fn stripe_write_raw_and_read_raw_cover_all_drives() {
+    let values = [
+        Bits::<2>([0x01, 0x02]),
+        Bits::<2>([0x03, 0x04]),
+        Bits::<2>([0x05, 0x06]),
+        Bits::<2>([0x07, 0x08]),
+    ];
+    let mut r = RAID3::<4, 2>([Bits::zero(); 4]);
+
+    r.write_raw(&values);
+
+    assert_eq!(r.0, values);
+
+    let mut out = [Bits::<2>::zero(); <RAID3<4, 2> as Stripe<4, 2>>::DISKS];
+    r.read_raw(&mut out);
+
+    assert_eq!(out, values);
+}
+
+#[test]
 #[should_panic]
 fn stripe_write_panics_on_wrong_len() {
     let d0 = Bits::<2>([0xAA, 0x55]);
@@ -52,6 +72,30 @@ fn stripe_read_panics_on_wrong_out_len() {
 
     let mut out = [Bits::<2>::zero(); 1];
     r.read(&mut out);
+}
+
+#[test]
+#[should_panic]
+fn stripe_write_raw_panics_on_wrong_len() {
+    let mut r = RAID3::<4, 2>([Bits::zero(); 4]);
+    let values = [Bits::<2>::zero(); <RAID3<4, 2> as Stripe<4, 2>>::DISKS];
+    r.write_raw(&values[..3]);
+}
+
+#[test]
+#[should_panic]
+fn stripe_read_raw_panics_on_wrong_out_len() {
+    let values = [
+        Bits::<2>([1, 2]),
+        Bits::<2>([3, 4]),
+        Bits::<2>([5, 6]),
+        Bits::<2>([7, 8]),
+    ];
+    let mut r = RAID3::<4, 2>([Bits::zero(); 4]);
+    r.write_raw(&values);
+
+    let mut out = [Bits::<2>::zero(); 3];
+    r.read_raw(&mut out);
 }
 
 #[test]
