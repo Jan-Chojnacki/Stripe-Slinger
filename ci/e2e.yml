@@ -1,0 +1,14 @@
+e2e-compose:
+  stage: e2e
+  needs: ["docker-push"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker compose -f docker-compose.yml up -d
+    - sleep 10
+    - curl -f http://localhost:9090/metrics
+    - docker compose -f docker-compose.yml logs
+    - docker compose -f docker-compose.yml down
+  when: on_success
+
