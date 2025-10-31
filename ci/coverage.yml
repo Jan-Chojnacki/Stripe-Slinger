@@ -1,0 +1,11 @@
+coverage-lib:
+  stage: coverage
+  script:
+    - cargo install cargo-tarpaulin --locked || true
+    - cargo tarpaulin -p stripe_slinger_lib --all-features --fail-under 80
+
+coverage-app:
+  stage: coverage
+  script:
+    - cargo install cargo-tarpaulin --locked || true
+    - cargo tarpaulin -p stripe_slinger_app --all-features --fail-under 60

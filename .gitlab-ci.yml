@@ -1,0 +1,8 @@
+include:
+  - local: 'ci/base.yml'
+  - local: 'ci/lint.yml'
+  - local: 'ci/test.yml'
+  - local: 'ci/coverage.yml'
+  - local: 'ci/image.yml'
+  - local: 'ci/e2e.yml'
+

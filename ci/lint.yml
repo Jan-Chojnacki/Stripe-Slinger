@@ -1,0 +1,10 @@
+fmt:
+  stage: lint
+  script:
+    - cargo fmt --all -- --check
+
+clippy:
+  stage: lint
+  needs: ["fmt"]
+  script:
+    - cargo clippy --workspace --all-targets --all-features -- -D warnings
