@@ -22,7 +22,7 @@ default:
     - docker
   before_script:
     - apt-get update && apt-get install -y pkg-config libssl-dev jq docker.io
-    - rustup component add rustfmt clippy
+    - rustup toolchain install nightly --component rustfmt clippy
+    - rustup default nightly
     - rustc --version
     - cargo --version
-

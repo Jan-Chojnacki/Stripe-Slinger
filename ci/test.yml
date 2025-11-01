@@ -2,4 +2,4 @@ test:
   stage: test
   needs: ["clippy"]
   script:
-    - cargo test --workspace --all-features -- --nocapture
+    - cargo +nightly test --workspace --all-features -- --nocapture
