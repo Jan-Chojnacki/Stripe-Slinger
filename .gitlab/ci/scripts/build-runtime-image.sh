@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -euo pipefail
 
 : "${CI_RUST_VERSION:?CI_RUST_VERSION required}"

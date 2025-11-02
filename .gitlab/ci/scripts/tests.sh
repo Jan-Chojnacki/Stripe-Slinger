@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -euo pipefail
 
 export CARGO_TARGET_DIR=target/llvm-cov-target
