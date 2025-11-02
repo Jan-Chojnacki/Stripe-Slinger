@@ -1,5 +1,0 @@
-test:
-  stage: test
-  needs: ["clippy"]
-  script:
-    - cargo +nightly test --workspace --all-features -- --nocapture

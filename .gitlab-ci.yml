@@ -1,8 +1,14 @@
 include:
-  - local: 'ci/base.yml'
-  - local: 'ci/lint.yml'
-  - local: 'ci/test.yml'
-  - local: 'ci/coverage.yml'
-  - local: 'ci/image.yml'
-  - local: 'ci/e2e.yml'
+  - local: ".gitlab/ci/base.yml"
+  - local: ".gitlab/ci/runtime-image.yml"
+  - local: ".gitlab/ci/lint.yml"
+  - local: ".gitlab/ci/test.yml"
+  - local: ".gitlab/ci/quality.yml"
+  - local: ".gitlab/ci/release.yml"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: never
 

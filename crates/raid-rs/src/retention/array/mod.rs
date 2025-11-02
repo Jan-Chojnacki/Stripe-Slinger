@@ -5,15 +5,14 @@ use crate::layout::bits::Bits;
 use crate::layout::stripe::traits::stripe::Stripe;
 use crate::retention::disk::Disk;
 
-pub struct Array<const D: usize, const N: usize> (pub [Disk; D]);
+pub struct Array<const D: usize, const N: usize>(pub [Disk; D]);
 
 impl<const D: usize, const N: usize> Array<D, N> {
     pub fn init_array(paths: [String; D]) -> Self {
-        let array: [Disk; D] = std::array::from_fn(|i| {
-            Disk::open_prealloc(&paths[i], 1024).unwrap()
-        });
+        let array: [Disk; D] =
+            std::array::from_fn(|i| Disk::open_prealloc(&paths[i], 1024).unwrap());
 
-        Self { 0: array }
+        Self(array)
     }
 
     pub fn write<T: Stripe<D, N>>(&mut self, off: u64, stripe: &T) {

@@ -15,9 +15,7 @@ impl<const D: usize, const N: usize> RAID3<D, N> {
     const PARITY_IDX: usize = D - 1;
 
     pub const fn zero() -> Self {
-        Self {
-            0: [Bits::<N>::zero(); D],
-        }
+        Self([Bits::<N>::zero(); D])
     }
 
     fn write_parity(&mut self) {

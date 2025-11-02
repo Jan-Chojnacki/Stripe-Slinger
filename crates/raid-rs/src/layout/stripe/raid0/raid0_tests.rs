@@ -23,8 +23,7 @@ fn write_then_read_roundtrips_data() {
 
     assert_eq!(r.0, data);
 
-    let mut out = [Bits::<4>::zero();
-        <RAID0<3, 4> as Stripe<3, 4>>::DATA];
+    let mut out = [Bits::<4>::zero(); <RAID0<3, 4> as Stripe<3, 4>>::DATA];
     r.read(&mut out);
 
     assert_eq!(out, data);

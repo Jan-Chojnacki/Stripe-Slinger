@@ -1,0 +1,64 @@
+coverage:
+  stage: quality
+  needs:
+    - { job: tests, artifacts: true }
+  script:
+    - .gitlab/ci/scripts/coverage.sh
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage.xml
+    paths:
+      - reports/coverage.xml
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
+        - "**/*.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - Dockerfile
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+        - "**/*.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - Dockerfile
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - "**/*.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - Dockerfile
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+      allow_failure: true
+    - when: never
+
+cargo-audit:
+  stage: quality
+  script:
+    - .gitlab/ci/scripts/cargo-audit.sh
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes:
+        - "**/Cargo.lock"
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes:
+        - "**/Cargo.lock"
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - "**/Cargo.lock"
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+      allow_failure: true
+    - when: never
