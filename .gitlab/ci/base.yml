@@ -3,7 +3,7 @@ stages:
   - lint
   - checks
   - quality
-  - build
+  - build & push
   - release
 
 variables:
@@ -21,12 +21,19 @@ variables:
   rules:
     - changes:
         - "**/*.rs"
+        - "**/build.rs"
         - "**/Cargo.toml"
         - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
+        - "rust-toolchain*"
+        - ".cargo/**/*"
+        - "Dockerfile"
+        - "Dockerfile.*"
+        - "*/Dockerfile"
+        - "docker/**/*"
+        - ".gitlab-ci.yml"
+        - ".gitlab/ci/**/*"
     - when: never
+
 
 default:
   image: $CI_RUST_IMAGE

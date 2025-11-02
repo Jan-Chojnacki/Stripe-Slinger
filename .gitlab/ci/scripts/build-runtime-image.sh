@@ -12,7 +12,7 @@ LATEST_TAG="$CI_REGISTRY_IMAGE/ci:rust-$CI_RUST_VERSION"
 
 docker build \
   --build-arg RUST_VERSION="$CI_RUST_VERSION" \
-  -f .gitlab/ci/images/Dockerfile.ci \
+  -f .gitlab/ci/images/runtime/Dockerfile \
   -t "$IMAGE_TAG" .
 
 echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY"

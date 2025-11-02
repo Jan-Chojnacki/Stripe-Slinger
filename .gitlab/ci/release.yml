@@ -1,4 +1,5 @@
 docker-build-and-push:
+  extends: .rust-changes
   stage: build & push
   image: docker:25
   services:

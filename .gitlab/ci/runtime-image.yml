@@ -10,7 +10,9 @@ build-runtime-image:
     DOCKER_TLS_CERTDIR: ""
   rules:
     - changes:
-        - .gitlab/ci/images/Dockerfile.ci
-        - .gitlab/ci/runtime-image.yml 
+        - .gitlab/ci/images/runtime/Dockerfile
+        - .gitlab/ci/images/runtime/**/*
+        - .gitlab/ci/runtime-image.yml
+        - .gitlab/ci/scripts/build-runtime-image.sh
   script:
     - .gitlab/ci/scripts/build-runtime-image.sh
