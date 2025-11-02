@@ -13,9 +13,7 @@ pub struct RAID1<const D: usize, const N: usize>(pub [Bits<N>; D]);
 
 impl<const D: usize, const N: usize> RAID1<D, N> {
     pub const fn zero() -> Self {
-        Self {
-            0: [Bits::<N>::zero(); D],
-        }
+        Self([Bits::<N>::zero(); D])
     }
 
     fn copy_from(&mut self, src: usize, dst: usize) {

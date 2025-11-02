@@ -16,6 +16,7 @@ impl Disk {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(false)
             .open(path)?;
         file.set_len(len)?;
         let map = unsafe { MmapOptions::new().len(len as usize).map_mut(&file)? };

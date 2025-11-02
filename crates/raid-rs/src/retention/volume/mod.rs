@@ -6,15 +6,13 @@ use crate::layout::bits::Bits;
 use crate::layout::stripe::traits::stripe::Stripe;
 use crate::retention::array::Array;
 
-pub struct Volume<const D: usize, const N: usize, T: Stripe<D, N>>
-{
+pub struct Volume<const D: usize, const N: usize, T: Stripe<D, N>> {
     array: Array<D, N>,
     layout: T,
     geom: Geometry,
 }
 
-impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T>
-{
+impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
     pub fn new(array: Array<D, N>, layout: T) -> Self {
         Self {
             array,

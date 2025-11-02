@@ -56,11 +56,7 @@ fn write_persists_data_to_each_disk() {
     let (_temps, paths) = tmp_paths::<D>();
     let mut array = Array::<D, N>::init_array(paths.clone());
 
-    let write_data: [Bits<N>; D] = [
-        Bits([0x11; N]),
-        Bits([0x22; N]),
-        Bits([0x33; N]),
-    ];
+    let write_data: [Bits<N>; D] = [Bits([0x11; N]), Bits([0x22; N]), Bits([0x33; N])];
     let stripe = SimpleStripe::new(write_data);
     let off = 256u64;
 

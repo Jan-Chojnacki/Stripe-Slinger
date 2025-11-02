@@ -65,6 +65,7 @@ fn stripe_read_panics_on_wrong_out_len() {
     let mut r = RAID1::<2, 2>([Bits::zero(); 2]);
     r.write(&[value]);
 
+    #[allow(clippy::zero_repeat_side_effects)]
     let mut out = [Bits::<2>::zero(); 0];
     r.read(&mut out);
 }

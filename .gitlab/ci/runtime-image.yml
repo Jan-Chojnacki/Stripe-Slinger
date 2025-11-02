@@ -1,0 +1,16 @@
+build-runtime-image:
+  stage: bootstrap
+  image: docker:25
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
+  before_script: []
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  rules:
+    - changes:
+        - .gitlab/ci/images/Dockerfile.ci
+        - .gitlab/ci/runtime-image.yml 
+  script:
+    - .gitlab/ci/scripts/build-runtime-image.sh

@@ -13,9 +13,7 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID0<D, N> {
             "RAID0 expects {} chunks.",
             Self::DATA
         );
-        for i in 0..Self::DATA {
-            self.0[i] = data[i];
-        }
+        self.0[..Self::DATA].copy_from_slice(&data[..Self::DATA]);
     }
 
     fn write_raw(&mut self, data: &[Bits<N>]) {
@@ -25,9 +23,7 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID0<D, N> {
             "RAID0 expects {} chunks.",
             Self::DISKS
         );
-        for i in 0..Self::DISKS {
-            self.0[i] = data[i];
-        }
+        self.0[..Self::DISKS].copy_from_slice(&data[..Self::DISKS]);
     }
 
     fn read(&self, out: &mut [Bits<N>]) {
@@ -37,9 +33,7 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID0<D, N> {
             "Output buffer must be {} chunks.",
             Self::DATA
         );
-        for i in 0..Self::DATA {
-            out[i] = self.0[i];
-        }
+        out[..Self::DATA].copy_from_slice(&self.0[..Self::DATA]);
     }
 
     fn read_raw(&self, out: &mut [Bits<N>]) {
@@ -49,8 +43,6 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID0<D, N> {
             "Output buffer must be {} chunks.",
             Self::DISKS
         );
-        for i in 0..Self::DISKS {
-            out[i] = self.0[i];
-        }
+        out[..Self::DISKS].copy_from_slice(&self.0[..Self::DISKS]);
     }
 }

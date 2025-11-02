@@ -1,0 +1,10 @@
+tests:
+  extends: .rust-changes
+  stage: checks
+  script:
+    - .gitlab/ci/scripts/tests.sh
+  artifacts:
+    when: always
+    paths:
+      - cov.tar.gz
+    expire_in: 1 day
