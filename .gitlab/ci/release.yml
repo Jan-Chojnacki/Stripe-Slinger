@@ -1,5 +1,5 @@
 docker-build-and-push:
-  stage: build
+  stage: build & push
   image: docker:25
   services:
     - name: docker:25-dind
