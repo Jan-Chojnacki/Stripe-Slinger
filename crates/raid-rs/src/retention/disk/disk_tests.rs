@@ -91,7 +91,7 @@ fn read_past_end_is_truncated() {
     let d = Disk::open_prealloc(&path, DISK_LEN).expect("open_prealloc");
 
     let mut buf = vec![0xCCu8; 4096];
-    let off = DISK_LEN - 512; // requesting 4096 bytes crosses EOF
+    let off = DISK_LEN - 512;
     let n = d.read_at(off, &mut buf);
     assert_eq!(n, 512, "read must truncate at EOF");
     assert!(buf[..512].iter().all(|&b| b == 0));
@@ -108,11 +108,10 @@ fn write_past_end_is_truncated() {
     let mut d = Disk::open_prealloc(&path, DISK_LEN).expect("open_prealloc");
 
     let off = DISK_LEN - 100;
-    let data = vec![0x5Au8; 500]; // extends 400 bytes beyond EOF
+    let data = vec![0x5Au8; 500];
     let n = d.write_at(off, &data);
     assert_eq!(n, 100, "only the in-range prefix should be written");
 
-    // Verify the part inside range is written
     let mut back = vec![0u8; 128];
     let rn = d.read_at(DISK_LEN - 128, &mut back);
     assert_eq!(rn, 128);
@@ -134,7 +133,7 @@ fn overlapping_writes_behave_as_expected() {
 
     let base = 256 * 1024;
     d.write_at(base, b"AAAAAAAAAA");
-    d.write_at(base + 5, b"BBBBB"); // overlaps last 5 bytes
+    d.write_at(base + 5, b"BBBBB");
 
     let mut buf = vec![0u8; 10];
     d.read_at(base, &mut buf);
