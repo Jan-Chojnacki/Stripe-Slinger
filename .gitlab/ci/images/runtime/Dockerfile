@@ -1,8 +1,6 @@
-# Runtime/CI image dla projektów Rust
 ARG RUST_VERSION=1.91
 FROM rust:${RUST_VERSION}
 
-# --- system deps (root) ---
 ARG DEBIAN_SNAPSHOT=20240601T000000Z
 RUN set -eux; \
     rm -f /etc/apt/sources.list.d/debian.sources; \
