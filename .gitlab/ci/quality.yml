@@ -15,29 +15,8 @@ coverage:
   rules:
     - !reference [.rust-changes, rules]
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
     - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
     - if: '$CI_COMMIT_BRANCH'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
       allow_failure: true
     - when: never
 
@@ -48,19 +27,7 @@ cargo-audit:
   rules:
     - !reference [.rust-changes, rules]
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
     - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
     - if: '$CI_COMMIT_BRANCH'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
       allow_failure: true
     - when: never
