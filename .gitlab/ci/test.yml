@@ -1,5 +1,4 @@
 tests:
-  extends: .rust-changes
   stage: checks
   script:
     - .gitlab/ci/scripts/tests.sh

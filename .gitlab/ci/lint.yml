@@ -1,11 +1,9 @@
 fmt:
-  extends: .rust-changes
   stage: checks
   script:
     - .gitlab/ci/scripts/fmt.sh
 
 clippy:
-  extends: .rust-changes
   stage: checks
   script:
     - .gitlab/ci/scripts/clippy.sh

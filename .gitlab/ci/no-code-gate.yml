@@ -1,0 +1,18 @@
+no-code-gate:
+  stage: meta
+  script:
+    - echo "non-code change detected; skipping Rust pipeline"
+  rules:
+    - changes:
+        - "**/*.rs"
+        - "**/build.rs"
+        - "**/Cargo.toml"
+        - "**/Cargo.lock"
+        - "rust-toolchain*"
+        - ".cargo/**/*"
+        - "Dockerfile"
+        - "Dockerfile.*"
+        - "*/Dockerfile"
+        - "docker/**/*"
+      when: never
+    - when: on_success
