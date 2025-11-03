@@ -15,6 +15,6 @@ impl<const D: usize, const N: usize> Stripe<D, N> for DummyStripe<D, N> {
 
 #[test]
 fn default_as_restore_is_none_for_concrete_type() {
-    let s = DummyStripe::<3, 4>::default();
+    let s = DummyStripe::<3, 4>;
     assert!(s.as_restore().is_none());
 }
