@@ -1,7 +1,7 @@
 no-code-gate:
   stage: meta
   script:
-    - echo "non-code change detected; skipping Rust pipeline"
+    - .gitlab/ci/scripts/no-code-gate.sh
   rules:
     - changes:
         - "**/*.rs"
