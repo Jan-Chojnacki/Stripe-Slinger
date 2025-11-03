@@ -3,22 +3,4 @@ no-code-gate:
   script:
     - .gitlab/ci/scripts/no-code-gate.sh
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: never
-    - changes:
-        - "**/*.rs"
-        - "**/build.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - "rust-toolchain*"
-        - ".cargo/**/*"
-        - "Dockerfile"
-        - "Dockerfile.*"
-        - "*/Dockerfile"
-        - "docker/**/*"
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: on_success
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: never
-    - when: always
+    - !reference [.rules-no-code-gate, rules]

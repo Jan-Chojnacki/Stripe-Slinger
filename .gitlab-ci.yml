@@ -29,6 +29,12 @@ variables:
   - "*/Dockerfile"
   - "docker/**/*"
 
+.runtime-image-change-paths: &runtime_image_paths
+  - .gitlab/ci/images/runtime/Dockerfile
+  - .gitlab/ci/images/runtime/**/*
+  - .gitlab/ci/runtime-image.yml
+  - .gitlab/ci/scripts/build-runtime-image.sh
+
 .rules-master-always:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
@@ -46,13 +52,6 @@ variables:
       changes: *rust_paths
       when: on_success
 
-.rules-dev-code-soft:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      changes: *rust_paths
-      when: on_success
-      allow_failure: true
-
 .rules-feature-code-soft:
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
@@ -66,11 +65,15 @@ variables:
       changes: *rust_paths
       when: on_success
 
-.rules-feature-code:
+.rules-no-code-gate:
   rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
-      changes: *rust_paths
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
+    - changes: *rust_paths
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
+    - when: on_success
 
 .rules-docker-build-and-push:
   rules:
@@ -78,6 +81,12 @@ variables:
       when: on_success
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes: *rust_paths
+      when: on_success
+    - when: never
+
+.rules-runtime-image:
+  rules:
+    - changes: *runtime_image_paths
       when: on_success
     - when: never
 
