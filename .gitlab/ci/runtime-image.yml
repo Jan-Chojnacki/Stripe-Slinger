@@ -8,6 +8,8 @@ build-runtime-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/runtime"
+    RUNTIME_BASE_IMAGE: "rust:${CI_RUST_VERSION}"
   script:
     - .gitlab/ci/scripts/build-runtime-image.sh
   rules:
