@@ -1,6 +1,8 @@
+# Runtime/CI image dla projektów Rust
 ARG RUST_VERSION=1.91
 FROM rust:${RUST_VERSION}
 
+# --- system deps (root) ---
 ARG DEBIAN_SNAPSHOT=20240601T000000Z
 RUN set -eux; \
     rm -f /etc/apt/sources.list.d/debian.sources; \
@@ -13,22 +15,23 @@ RUN set -eux; \
         libssl-dev \
         ca-certificates \
         jq \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 1000 ci && mkdir -p /build && chown -R ci:ci /build
-USER ci
 
+USER ci
 ENV CARGO_HOME=/home/ci/.cargo \
     RUSTUP_HOME=/home/ci/.rustup \
     PATH=/home/ci/.cargo/bin:$PATH \
     CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-
 WORKDIR /build
 
-RUN rustup set profile minimal \
- && rustup toolchain install ${RUST_VERSION} \
- && rustup default ${RUST_VERSION} \
- && rustup component add rustfmt clippy llvm-tools-preview
+RUN set -eux; \
+    curl -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh; \
+    sh /tmp/rustup-init.sh -y --default-toolchain ${RUST_VERSION} --profile minimal; \
+    rm /tmp/rustup-init.sh; \
+    rustup component add rustfmt clippy llvm-tools-preview
 
 ARG NEXTEST_VERSION=0.9.110
 RUN cargo install cargo-nextest --locked --version ${NEXTEST_VERSION}
