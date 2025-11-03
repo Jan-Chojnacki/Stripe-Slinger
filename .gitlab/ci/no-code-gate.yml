@@ -3,6 +3,8 @@ no-code-gate:
   script:
     - .gitlab/ci/scripts/no-code-gate.sh
   rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
     - changes:
         - "**/*.rs"
         - "**/build.rs"
