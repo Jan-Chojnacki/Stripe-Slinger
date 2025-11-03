@@ -8,11 +8,7 @@ build-runtime-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-  rules:
-    - changes:
-        - .gitlab/ci/images/runtime/Dockerfile
-        - .gitlab/ci/images/runtime/**/*
-        - .gitlab/ci/runtime-image.yml
-        - .gitlab/ci/scripts/build-runtime-image.sh
   script:
     - .gitlab/ci/scripts/build-runtime-image.sh
+  rules:
+    - !reference [.rules-runtime-image, rules]
