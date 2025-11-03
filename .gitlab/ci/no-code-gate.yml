@@ -1,0 +1,6 @@
+no-code-gate:
+  stage: checks
+  script:
+    - .gitlab/ci/scripts/no-code-gate.sh
+  rules:
+    - !reference [.rules-no-code-gate, rules]

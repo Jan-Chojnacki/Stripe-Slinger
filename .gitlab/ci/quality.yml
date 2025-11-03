@@ -13,31 +13,11 @@ coverage:
       - reports/coverage.xml
     expire_in: 1 week
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-    - if: '$CI_COMMIT_BRANCH'
-      changes:
-        - "**/*.rs"
-        - "**/Cargo.toml"
-        - "**/Cargo.lock"
-        - Dockerfile
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-      allow_failure: true
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-code, rules]
+    - !reference [.rules-mr-develop-code, rules]  
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
     - when: never
 
 cargo-audit:
@@ -45,20 +25,9 @@ cargo-audit:
   script:
     - .gitlab/ci/scripts/cargo-audit.sh
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-    - if: '$CI_COMMIT_BRANCH'
-      changes:
-        - "**/Cargo.lock"
-        - .gitlab-ci.yml
-        - .gitlab/ci/**/*
-      allow_failure: true
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-code, rules]
+    - !reference [.rules-mr-develop-code, rules]  
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
     - when: never
