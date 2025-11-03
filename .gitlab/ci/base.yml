@@ -32,8 +32,6 @@ variables:
         - "docker/**/*"
         - ".gitlab-ci.yml"
         - ".gitlab/ci/**/*"
-    - when: never
-
 
 default:
   image: $CI_RUST_IMAGE

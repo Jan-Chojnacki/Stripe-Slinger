@@ -10,6 +10,7 @@ clippy:
   script:
     - .gitlab/ci/scripts/clippy.sh
   rules:
+    - !reference [.rust-changes, rules]
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
     - if: '$CI_COMMIT_BRANCH == "master"'
     - if: '$CI_COMMIT_BRANCH'
