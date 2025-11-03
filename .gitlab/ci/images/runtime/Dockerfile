@@ -15,6 +15,16 @@ RUN set -eux; \
         jq \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m -u 1000 ci && mkdir -p /build && chown -R ci:ci /build
+
+USER ci
+ENV CARGO_HOME=/home/ci/.cargo \
+    RUSTUP_HOME=/home/ci/.rustup \
+    PATH=/home/ci/.cargo/bin:$PATH \
+    CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
+WORKDIR /build
+
 RUN rustup component add rustfmt clippy llvm-tools-preview
 
 ARG NEXTEST_VERSION=0.9.110
@@ -25,9 +35,3 @@ RUN cargo install cargo-llvm-cov --locked --version ${LLVM_COV_VERSION}
 
 ARG CARGO_AUDIT_VERSION=0.21.2
 RUN cargo install cargo-audit --locked --version ${CARGO_AUDIT_VERSION}
-
-RUN useradd -m -u 1000 ci
-WORKDIR /build
-RUN chown -R ci:ci /build
-USER ci
-
