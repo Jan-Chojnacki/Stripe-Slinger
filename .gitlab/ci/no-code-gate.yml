@@ -17,4 +17,8 @@ no-code-gate:
         - "*/Dockerfile"
         - "docker/**/*"
       when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
     - when: always
