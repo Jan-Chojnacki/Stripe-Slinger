@@ -1,3 +1,13 @@
+ci-smoke:
+  stage: lint
+  script:
+    - echo "CI changed."
+  rules:
+    - changes:
+        - .gitlab-ci.yml
+        - .gitlab/ci/**/*
+    - when: never
+
 fmt:
   extends: .rust-changes
   stage: checks
