@@ -30,8 +30,8 @@ variables:
         - "Dockerfile.*"
         - "*/Dockerfile"
         - "docker/**/*"
-        - ".gitlab-ci.yml"
-        - ".gitlab/ci/**/*"
+    - when: never
+
 
 default:
   image: $CI_RUST_IMAGE
