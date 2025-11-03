@@ -14,7 +14,7 @@ variables:
   GIT_CLEAN_FLAGS: none
   CARGO_TERM_COLOR: always
   CI_RUST_VERSION: "1.91"
-  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/ci:rust-$CI_RUST_VERSION"
+  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/runtime:rust-$CI_RUST_VERSION"
   RUSTFLAGS: "-C debuginfo=2"
 
 .rust-change-paths: &rust_paths
@@ -116,6 +116,8 @@ include:
 
 workflow:
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
     - if: '$CI_COMMIT_BRANCH == "master"'
@@ -125,17 +127,11 @@ workflow:
     - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
       changes:
         compare_to: 'refs/heads/develop'
-        paths:
-          - "**/*.rs"
-          - "**/build.rs"
-          - "**/Cargo.toml"
-          - "**/Cargo.lock"
-          - "rust-toolchain*"
-          - ".cargo/**/*"
-          - "Dockerfile"
-          - "Dockerfile.*"
-          - "*/Dockerfile"
-          - "docker/**/*"
+        paths: *rust_paths
+      when: always
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes:
+        compare_to: 'refs/heads/develop'
+        paths: *runtime_image_paths
       when: always
     - when: never
-
