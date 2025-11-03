@@ -1,6 +1,5 @@
 stages:
   - bootstrap
-  - meta
   - lint
   - checks
   - quality

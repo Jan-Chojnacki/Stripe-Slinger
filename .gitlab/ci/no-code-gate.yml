@@ -1,5 +1,5 @@
 no-code-gate:
-  stage: meta
+  stage: checks
   script:
     - .gitlab/ci/scripts/no-code-gate.sh
   rules:
