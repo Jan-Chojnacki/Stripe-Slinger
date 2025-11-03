@@ -10,6 +10,10 @@ build-runtime-image:
     DOCKER_TLS_CERTDIR: ""
     RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/runtime"
     RUNTIME_BASE_IMAGE: "rust:${CI_RUST_VERSION}"
+  artifacts:
+    reports:
+      dotenv: runtime.env 
+    expire_in: 1 day
   script:
     - .gitlab/ci/scripts/build-runtime-image.sh
   rules:
