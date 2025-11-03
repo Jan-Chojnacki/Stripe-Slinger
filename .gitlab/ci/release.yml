@@ -12,6 +12,7 @@ docker-build-and-push:
   script:
     - .gitlab/ci/scripts/docker-build-and-push.sh
   rules:
+    - !reference [.rust-changes, rules]
     - if: '$CI_COMMIT_BRANCH == "master"'
     - if: '$CI_COMMIT_TAG'
 

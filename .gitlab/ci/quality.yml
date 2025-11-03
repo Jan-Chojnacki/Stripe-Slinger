@@ -13,6 +13,7 @@ coverage:
       - reports/coverage.xml
     expire_in: 1 week
   rules:
+    - !reference [.rust-changes, rules]
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
       changes:
         - "**/*.rs"
@@ -45,6 +46,7 @@ cargo-audit:
   script:
     - .gitlab/ci/scripts/cargo-audit.sh
   rules:
+    - !reference [.rust-changes, rules]
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
       changes:
         - "**/Cargo.lock"
