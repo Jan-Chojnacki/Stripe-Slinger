@@ -16,8 +16,8 @@ RUN set -eux; \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 1000 ci && mkdir -p /build && chown -R ci:ci /build
-
 USER ci
+
 ENV CARGO_HOME=/home/ci/.cargo \
     RUSTUP_HOME=/home/ci/.rustup \
     PATH=/home/ci/.cargo/bin:$PATH \
@@ -25,7 +25,10 @@ ENV CARGO_HOME=/home/ci/.cargo \
 
 WORKDIR /build
 
-RUN rustup component add rustfmt clippy llvm-tools-preview
+RUN rustup set profile minimal \
+ && rustup toolchain install ${RUST_VERSION} \
+ && rustup default ${RUST_VERSION} \
+ && rustup component add rustfmt clippy llvm-tools-preview
 
 ARG NEXTEST_VERSION=0.9.110
 RUN cargo install cargo-nextest --locked --version ${NEXTEST_VERSION}
