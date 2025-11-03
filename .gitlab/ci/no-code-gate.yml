@@ -15,4 +15,4 @@ no-code-gate:
         - "*/Dockerfile"
         - "docker/**/*"
       when: never
-    - when: on_success
+    - when: always
