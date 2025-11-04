@@ -100,9 +100,7 @@ variables:
     - when: never
 
 default:
-  image:
-    name: $CI_RUST_IMAGE         
-    pull_policy: always          
+  image: $CI_RUST_IMAGE
   tags:
     - primary
   interruptible: true
