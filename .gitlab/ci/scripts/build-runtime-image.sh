@@ -9,7 +9,6 @@ set -euo pipefail
 RUNTIME_IMAGE_REPO="${RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/runtime}"
 RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-rust:${CI_RUST_VERSION}}"
 
-# 1) Fingerprint = wersja + digest base + hash plików runtime
 FILES="$(
   { find .gitlab/ci/images/runtime -type f -print;
     echo .gitlab/ci/runtime-image.yml;
