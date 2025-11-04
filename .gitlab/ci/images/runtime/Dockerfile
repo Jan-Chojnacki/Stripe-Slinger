@@ -42,11 +42,9 @@ RUN printf '%s\n' \
   '#!/bin/sh' \
   'set -e' \
   'umask 002' \
-  '# Jeżeli runner zamontował katalog projektu jako root, nadaj go użytkownikowi ci' \
   'if [ -n "$CI_PROJECT_DIR" ] && [ -d "$CI_PROJECT_DIR" ]; then' \
   '  chown -R ci:ci "$CI_PROJECT_DIR" || true' \
   'fi' \
-  '# (opcjonalnie) jeżeli istnieje /builds i /builds/*/target – też napraw właściciela' \
   'if [ -d /builds ]; then' \
   '  find /builds -maxdepth 3 -type d -name target -exec chown -R ci:ci {} + 2>/dev/null || true' \
   'fi' \
