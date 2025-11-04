@@ -1,6 +1,7 @@
 ARG RUST_VERSION=1.91
 FROM rust:${RUST_VERSION}
 
+# system deps
 ARG DEBIAN_SNAPSHOT=20240601T000000Z
 RUN set -eux; \
     rm -f /etc/apt/sources.list.d/debian.sources; \
@@ -11,22 +12,18 @@ RUN set -eux; \
         build-essential pkg-config libssl-dev ca-certificates jq curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 1000 ci \
- && mkdir -p /build /home/ci/.cargo /home/ci/.rustup /home/ci/target \
- && chown -R ci:ci /build /home/ci
-
-USER ci
-ENV CARGO_HOME=/home/ci/.cargo \
-    RUSTUP_HOME=/home/ci/.rustup \
-    CARGO_TARGET_DIR=/home/ci/target \
-    PATH=/home/ci/.cargo/bin:$PATH \
+# globalne ścieżki cargo/rustup + sparse
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH=/usr/local/cargo/bin:$PATH \
     CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-WORKDIR /build
 
+# toolchain + komponenty zainstalowane globalnie (root)
 RUN rustup set profile minimal \
  && rustup toolchain install ${RUST_VERSION} --component rustfmt clippy llvm-tools-preview \
  && rustup default ${RUST_VERSION}
 
+# narzędzia cargo (globalnie)
 ARG NEXTEST_VERSION=0.9.110
 RUN cargo install cargo-nextest --locked --version ${NEXTEST_VERSION}
 
@@ -35,3 +32,7 @@ RUN cargo install cargo-llvm-cov --locked --version ${LLVM_COV_VERSION}
 
 ARG CARGO_AUDIT_VERSION=0.21.2
 RUN cargo install cargo-audit --locked --version ${CARGO_AUDIT_VERSION}
+
+# (opcjonalnie) utwórz użytkownika ci, ale NIE przełączaj się na niego
+RUN useradd -m -u 1000 ci || true
+# nie ustawiamy USER — joby będą działać jako root (to naprawia błąd zapisu do /builds)
