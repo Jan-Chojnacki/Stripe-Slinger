@@ -1,8 +1,8 @@
-# runtime image (root) – stabilny pod GitLab Runnera
+# Runtime/CI image z użytkownikiem 'ci' i bez problemów z uprawnieniami
 ARG RUST_VERSION=1.91.0
 FROM rust:${RUST_VERSION}
 
-# system deps (root)
+# --- system deps (root) ---
 ARG DEBIAN_SNAPSHOT=20240601T000000Z
 RUN set -eux; \
     rm -f /etc/apt/sources.list.d/debian.sources; \
@@ -11,29 +11,59 @@ RUN set -eux; \
     apt-get -o Acquire::Check-Valid-Until=false update; \
     apt-get install -y --no-install-recommends \
         build-essential pkg-config libssl-dev ca-certificates jq curl \
+        util-linux \
     && rm -rf /var/lib/apt/lists/*
 
-# global cargo/rustup + sparse (root)
-ENV CARGO_HOME=/usr/local/cargo \
-    RUSTUP_HOME=/usr/local/rustup \
-    PATH=/usr/local/cargo/bin:$PATH \
+# --- user + katalogi (root) ---
+RUN useradd -m -u 1000 ci \
+ && mkdir -p /home/ci/.cargo /home/ci/.rustup /home/ci/target \
+ && chown -R ci:ci /home/ci
+
+# --- per-user env (widoczne dla procesu 'ci') ---
+ENV CARGO_HOME=/home/ci/.cargo \
+    RUSTUP_HOME=/home/ci/.rustup \
+    PATH=/home/ci/.cargo/bin:$PATH \
     CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-# toolchain + komponenty globalnie (root)
+# --- instalacja toolchaina i komponentów do $HOME użytkownika 'ci' ---
+# (robimy to jako root, ale instalacja trafia do /home/ci dzięki ENV)
 RUN set -eux; \
-    rustup set profile minimal; \
-    rustup toolchain install ${RUST_VERSION}; \
-    rustup default ${RUST_VERSION}; \
-    rustup component add rustfmt clippy llvm-tools-preview
+    # rustup per-user: utwórz katalogi i nadaj prawa
+    install -d -o ci -g ci /home/ci/.cargo /home/ci/.rustup; \
+    # pobierz i odpal rustup-init dla użytkownika 'ci'
+    curl -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh; \
+    chown ci:ci /tmp/rustup-init.sh; \
+    su -s /bin/sh -c 'sh /tmp/rustup-init.sh -y --default-toolchain '"${RUST_VERSION}"' --profile minimal' ci; \
+    rm /tmp/rustup-init.sh; \
+    # doinstaluj komponenty na właściwym toolchainie
+    su -s /bin/sh -c 'rustup default '"${RUST_VERSION}"' && rustup component add --toolchain '"${RUST_VERSION}"' rustfmt clippy llvm-tools-preview' ci
 
-# narzędzia cargo (root)
+# --- narzędzia cargo instalowane dla użytkownika 'ci' ---
 ARG NEXTEST_VERSION=0.9.110
-RUN cargo install --locked cargo-nextest --version ${NEXTEST_VERSION}
+RUN su -s /bin/sh -c 'cargo install --locked cargo-nextest --version '"${NEXTEST_VERSION}" ci
 
 ARG LLVM_COV_VERSION=0.6.21
-RUN cargo install --locked cargo-llvm-cov --version ${LLVM_COV_VERSION}
+RUN su -s /bin/sh -c 'cargo install --locked cargo-llvm-cov --version '"${LLVM_COV_VERSION}" ci
 
 ARG CARGO_AUDIT_VERSION=0.21.2
-RUN cargo install --locked cargo-audit --version ${CARGO_AUDIT_VERSION}
+RUN su -s /bin/sh -c 'cargo install --locked cargo-audit --version '"${CARGO_AUDIT_VERSION}" ci
 
+# --- ENTRYPOINT: naprawa uprawnień mountu + drop do użytkownika 'ci' ---
+# używamy 'runuser' z util-linux (lekki, bez TTY)
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'set -e' \
+  'umask 002' \
+  '# Jeżeli runner zamontował katalog projektu jako root, nadaj go użytkownikowi ci' \
+  'if [ -n "$CI_PROJECT_DIR" ] && [ -d "$CI_PROJECT_DIR" ]; then' \
+  '  chown -R ci:ci "$CI_PROJECT_DIR" || true' \
+  'fi' \
+  '# (opcjonalnie) jeżeli istnieje /builds i /builds/*/target – też napraw właściciela' \
+  'if [ -d /builds ]; then' \
+  '  find /builds -maxdepth 3 -type d -name target -exec chown -R ci:ci {} + 2>/dev/null || true' \
+  'fi' \
+  'exec runuser -u ci -- "$@"' \
+  > /usr/local/bin/ci-entrypoint && chmod +x /usr/local/bin/ci-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/ci-entrypoint"]
 WORKDIR /build
