@@ -8,14 +8,24 @@ RUN set -eux; \
     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/ bookworm-security main" >> /etc/apt/sources.list; \
     apt-get -o Acquire::Check-Valid-Until=false update; \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        pkg-config \
-        libssl-dev \
-        ca-certificates \
-        jq \
+        build-essential pkg-config libssl-dev ca-certificates jq curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN rustup component add rustfmt clippy llvm-tools-preview
+RUN useradd -m -u 1000 ci \
+ && mkdir -p /build /home/ci/.cargo /home/ci/.rustup /home/ci/target \
+ && chown -R ci:ci /build /home/ci
+
+USER ci
+ENV CARGO_HOME=/home/ci/.cargo \
+    RUSTUP_HOME=/home/ci/.rustup \
+    CARGO_TARGET_DIR=/home/ci/target \
+    PATH=/home/ci/.cargo/bin:$PATH \
+    CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+WORKDIR /build
+
+RUN rustup set profile minimal \
+ && rustup toolchain install ${RUST_VERSION} --component rustfmt clippy llvm-tools-preview \
+ && rustup default ${RUST_VERSION}
 
 ARG NEXTEST_VERSION=0.9.110
 RUN cargo install cargo-nextest --locked --version ${NEXTEST_VERSION}
@@ -25,9 +35,3 @@ RUN cargo install cargo-llvm-cov --locked --version ${LLVM_COV_VERSION}
 
 ARG CARGO_AUDIT_VERSION=0.21.2
 RUN cargo install cargo-audit --locked --version ${CARGO_AUDIT_VERSION}
-
-RUN useradd -m -u 1000 ci
-WORKDIR /build
-RUN chown -R ci:ci /build
-USER ci
-
