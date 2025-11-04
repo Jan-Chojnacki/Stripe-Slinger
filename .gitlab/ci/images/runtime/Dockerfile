@@ -8,34 +8,30 @@ RUN set -eux; \
     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/ bookworm-security main" >> /etc/apt/sources.list; \
     apt-get -o Acquire::Check-Valid-Until=false update; \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        pkg-config \
-        libssl-dev \
-        ca-certificates \
-        jq \
-        curl \
+        build-essential pkg-config libssl-dev ca-certificates jq curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 1000 ci && mkdir -p /build && chown -R ci:ci /build
+RUN useradd -m -u 1000 ci \
+ && mkdir -p /build /usr/local/cargo /usr/local/rustup \
+ && chown -R ci:ci /build /usr/local/cargo /usr/local/rustup
+
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 USER ci
-ENV CARGO_HOME=/home/ci/.cargo \
-    RUSTUP_HOME=/home/ci/.rustup \
-    PATH=/home/ci/.cargo/bin:$PATH \
-    CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 WORKDIR /build
 
+ARG RUST_VERSION
 RUN set -eux; \
-    curl -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh; \
-    sh /tmp/rustup-init.sh -y --default-toolchain ${RUST_VERSION} --profile minimal; \
-    rm /tmp/rustup-init.sh; \
+    rustup set profile minimal; \
+    rustup toolchain install "${RUST_VERSION}"; \
+    rustup default "${RUST_VERSION}"; \
     rustup component add rustfmt clippy llvm-tools-preview
 
 ARG NEXTEST_VERSION=0.9.110
-RUN cargo install cargo-nextest --locked --version ${NEXTEST_VERSION}
+RUN cargo install cargo-nextest --locked --version "${NEXTEST_VERSION}"
 
 ARG LLVM_COV_VERSION=0.6.21
-RUN cargo install cargo-llvm-cov --locked --version ${LLVM_COV_VERSION}
+RUN cargo install cargo-llvm-cov --locked --version "${LLVM_COV_VERSION}"
 
 ARG CARGO_AUDIT_VERSION=0.21.2
-RUN cargo install cargo-audit --locked --version ${CARGO_AUDIT_VERSION}
+RUN cargo install cargo-audit --locked --version "${CARGO_AUDIT_VERSION}"
