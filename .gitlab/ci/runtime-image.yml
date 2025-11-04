@@ -1,5 +1,6 @@
 build-runtime-image:
   stage: bootstrap
+  resource_group: runtime-image   
   image: docker:25
   services:
     - name: docker:25-dind
