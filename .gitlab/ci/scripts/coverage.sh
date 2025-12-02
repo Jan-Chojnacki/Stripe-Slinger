@@ -1,7 +1,9 @@
 #!/bin/sh
 set -euo pipefail
 
+rm -rf target
 mkdir -p target
+
 tar xzf cov.tar.gz -C target
 
 export CARGO_TARGET_DIR=target/llvm-cov-target
@@ -18,14 +20,15 @@ rate=$(
   || true
 )
 
-if [ -z "${rate:-}" ]; then
-  rate=0
-fi
+[ -z "${rate:-}" ] && rate=0
 
-if [ "${CI_COMMIT_BRANCH:-}" = "master" ] || { [ "${CI_PIPELINE_SOURCE:-}" = "merge_request_event" ] && [ "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" = "master" ]; }; then
+if [ "${CI_COMMIT_BRANCH:-}" = "master" ] || {
+     [ "${CI_PIPELINE_SOURCE:-}" = "merge_request_event" ] &&
+     [ "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" = "master" ];
+   }; then
   awk -v r="$rate" 'BEGIN {
     if (r < 0.5) { printf "Coverage %.2f < 0.50. FAIL\n", r; exit 1 }
-    else { printf "Coverage %.2f >= 0.50. OK\n", r }
+    else         { printf "Coverage %.2f >= 0.50. OK\n", r }
   }'
 else
   echo "Soft coverage check (branch): $rate"

@@ -9,12 +9,16 @@ set -euo pipefail
 RUNTIME_IMAGE_REPO="${RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/runtime}"
 RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-rust:${CI_RUST_VERSION}}"
 
-FILES="$(
-  { find .gitlab/ci/images/runtime -type f -print;
-    echo .gitlab/ci/runtime-image.yml;
-    echo .gitlab/ci/scripts/build-runtime-image.sh; } | LC_ALL=C sort
+FILES_HASH="$(
+  {
+    find .gitlab/ci/images/runtime -type f -print
+    echo .gitlab/ci/runtime-image.yml
+    echo .gitlab/ci/scripts/build-runtime-image.sh
+  } | LC_ALL=C sort |
+  while IFS= read -r f; do
+    cat "$f"
+  done | sha256sum | cut -c1-16
 )"
-FILES_HASH="$(cat "$FILES" | sha256sum | cut -c1-16)"
 
 echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY" >/dev/null
 
