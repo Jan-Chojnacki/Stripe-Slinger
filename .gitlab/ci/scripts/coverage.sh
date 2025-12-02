@@ -1,18 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 set -euo pipefail
 
 mkdir -p target
 tar xzf cov.tar.gz -C target
 
 export CARGO_TARGET_DIR=target/llvm-cov-target
+export LLVM_COV_FLAGS="${LLVM_COV_FLAGS:-} -use-color=0"
 
 mkdir -p reports
 
-cargo llvm-cov report \
-  --cobertura --output-path reports/coverage.xml \
-  --ignore-filename-regex='/.cargo/|/rustc/'
+report_out=$(cargo llvm-cov report \
+  --ignore-filename-regex='/.cargo/|/rustc/')
 
-rate=$(grep -o 'line-rate="[0-9.]*"' reports/coverage.xml | head -1 | cut -d'"' -f2 || true)
+rate=$(
+  printf '%s\n' "$report_out" \
+  | awk '/^TOTAL/ { gsub("%","",$10); if ($10 != "") { printf "%.4f", $10/100 } }' \
+  || true
+)
+
 if [ -z "${rate:-}" ]; then
   rate=0
 fi
