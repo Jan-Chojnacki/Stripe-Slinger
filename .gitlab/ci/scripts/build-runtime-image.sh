@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 : "${CI_RUST_VERSION:?required}"
@@ -14,7 +14,7 @@ FILES="$(
     echo .gitlab/ci/runtime-image.yml;
     echo .gitlab/ci/scripts/build-runtime-image.sh; } | LC_ALL=C sort
 )"
-FILES_HASH="$(cat $FILES | sha256sum | cut -c1-16)"
+FILES_HASH="$(cat "$FILES" | sha256sum | cut -c1-16)"
 
 echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY" >/dev/null
 

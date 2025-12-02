@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 : "${CI_API_V4_URL:?CI_API_V4_URL required}"

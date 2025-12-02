@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 : "${CI_REGISTRY_IMAGE:?CI_REGISTRY_IMAGE required}"
