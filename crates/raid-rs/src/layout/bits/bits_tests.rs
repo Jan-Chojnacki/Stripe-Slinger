@@ -42,15 +42,15 @@ fn as_bytes_and_as_bytes_mut_expose_backing_storage() {
 fn get_set_roundtrip_and_bit_order() {
     let mut a = Bits::<2>::zero();
 
-    a.set(0, true); // LSB bajtu 0
+    a.set(0, true);
     assert!(a.get(0));
     assert_eq!(a.as_bytes()[0], 0b0000_0001);
 
-    a.set(7, true); // MSB bajtu 0
+    a.set(7, true);
     assert!(a.get(7));
     assert_eq!(a.as_bytes()[0], 0b1000_0001);
 
-    a.set(8, true); // LSB bajtu 1
+    a.set(8, true);
     assert!(a.get(8));
     assert_eq!(a.as_bytes()[1], 0b0000_0001);
 
@@ -74,7 +74,7 @@ fn xor_owned_and_assign_variants() {
 
     let x = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
     let y = Bits::<4>([0xFF, 0xFF, 0x00, 0x00]);
-    let z = x ^ &y;
+    let z = x ^ y;
     assert_eq!(z.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
 
     let mut m = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
@@ -82,7 +82,7 @@ fn xor_owned_and_assign_variants() {
     assert_eq!(m.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
 
     let mut q = Bits::<4>([1, 2, 3, 4]);
-    let q_clone = q; // Copy
+    let q_clone = q;
     q ^= q_clone;
     assert_eq!(q.as_bytes(), &[0, 0, 0, 0]);
 }
