@@ -1,4 +1,8 @@
 mod mapper;
+#[cfg(test)]
+mod mapper_tests;
+#[cfg(test)]
+mod volume_tests;
 
 use mapper::{Geometry, geometry, locate_byte, stripe_byte_offset};
 

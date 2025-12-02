@@ -1,5 +1,4 @@
 tests:
-  extends: .rust-changes
   stage: checks
   script:
     - .gitlab/ci/scripts/tests.sh
@@ -8,3 +7,10 @@ tests:
     paths:
       - cov.tar.gz
     expire_in: 1 day
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-code, rules]
+    - !reference [.rules-mr-develop-code, rules]
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
+    - when: never

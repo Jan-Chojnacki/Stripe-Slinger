@@ -1,5 +1,6 @@
 build-runtime-image:
   stage: bootstrap
+  resource_group: runtime-image   
   image: docker:25
   services:
     - name: docker:25-dind
@@ -8,11 +9,9 @@ build-runtime-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-  rules:
-    - changes:
-        - .gitlab/ci/images/runtime/Dockerfile
-        - .gitlab/ci/images/runtime/**/*
-        - .gitlab/ci/runtime-image.yml
-        - .gitlab/ci/scripts/build-runtime-image.sh
+    RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/runtime"
+    RUNTIME_BASE_IMAGE: "rust:${CI_RUST_VERSION}"
   script:
     - .gitlab/ci/scripts/build-runtime-image.sh
+  rules:
+    - !reference [.rules-runtime-image, rules]
