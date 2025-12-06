@@ -1,0 +1,58 @@
+services:
+  raid-simulator:
+    build:
+      context: ../services/raid-simulator
+      dockerfile: Dockerfile
+    image: raid-simulator:latest
+    container_name: raid-simulator
+
+  metrics-gateway:
+    build:
+      context: ../services/metrics-gateway
+      dockerfile: Dockerfile
+    image: metrics-gateway:latest
+    container_name: metrics-gateway
+    environment:
+      - METRICS_PORT=8080
+    ports:
+      - "8083:8080"
+    depends_on:
+      - raid-simulator
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+  grafana-alloy:
+    image: grafana/alloy:latest
+    container_name: grafana-alloy
+    depends_on:
+      - metrics-gateway
+      - cadvisor
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - ./alloy-data:/var/lib/alloy
+    environment:
+      GRAFANA_CLOUD_PROM_URL: ${GRAFANA_CLOUD_PROM_URL}
+      GRAFANA_CLOUD_PROM_USERNAME: ${GRAFANA_CLOUD_PROM_USERNAME}
+      GRAFANA_CLOUD_PROM_PASSWORD: ${GRAFANA_CLOUD_PROM_PASSWORD}
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy
+      - /etc/alloy/config.alloy
+    ports:
+      - "8082:12345"
+
+networks:
+  default:
+    name: stripe-slinger
