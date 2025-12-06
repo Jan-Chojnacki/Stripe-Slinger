@@ -1,4 +1,4 @@
-tests:
+raid-simulator-tests:
   stage: checks
   script:
     - .gitlab/ci/scripts/tests.sh
@@ -13,4 +13,26 @@ tests:
     - !reference [.rules-mr-develop-code, rules]
     - !reference [.rules-dev-code, rules]
     - !reference [.rules-feature-code-soft, rules]
+    - when: never
+
+metrics-gateway-tests:
+  stage: checks
+  image:
+    name: $CI_GO_IMAGE
+    pull_policy: always
+  before_script:
+    - go version
+  script:
+    - .gitlab/ci/scripts/go-tests.sh
+  artifacts:
+    when: always
+    paths:
+      - services/metrics-gateway/coverage.out
+    expire_in: 1 day
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-go-code, rules]
+    - !reference [.rules-mr-develop-go-code, rules]
+    - !reference [.rules-dev-go-code, rules]
+    - !reference [.rules-feature-go-soft, rules]
     - when: never

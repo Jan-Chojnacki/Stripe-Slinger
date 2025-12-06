@@ -13,10 +13,15 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   GIT_CLEAN_FLAGS: none
   CARGO_TERM_COLOR: always
+
   CI_RUST_VERSION: "1.91"
   CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/runtime:rust-$CI_RUST_VERSION"
   RUSTFLAGS: "-C debuginfo=2"
   RUST_PROJECT_DIR: "services/raid-simulator"
+
+  CI_GO_VERSION: "1.25"
+  CI_GO_IMAGE: "$CI_REGISTRY_IMAGE/go-runtime:go-$CI_GO_VERSION"
+  GO_PROJECT_DIR: "services/metrics-gateway"
 
 .rust-change-paths: &rust_paths
   - "**/*.rs"
@@ -30,11 +35,22 @@ variables:
   - "*/Dockerfile"
   - "docker/**/*"
 
+.go-change-paths: &go_paths
+  - "services/metrics-gateway/**/*.go"
+  - "services/metrics-gateway/go.mod"
+  - "services/metrics-gateway/go.sum"
+
 .runtime-image-change-paths: &runtime_image_paths
   - .gitlab/ci/images/runtime/Dockerfile
   - .gitlab/ci/images/runtime/**/*
   - .gitlab/ci/runtime-image.yml
   - .gitlab/ci/scripts/build-runtime-image.sh
+
+.go-runtime-image-change-paths: &go_runtime_image_paths
+  - .gitlab/ci/images/go-runtime/Dockerfile
+  - .gitlab/ci/images/go-runtime/**/*
+  - .gitlab/ci/runtime-image.yml
+  - .gitlab/ci/scripts/build-go-runtime-image.sh
 
 .rules-master-always:
   rules:
@@ -66,13 +82,42 @@ variables:
       changes: *rust_paths
       when: on_success
 
+.rules-mr-master-go-code:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes: *go_paths
+      when: on_success
+
+.rules-mr-develop-go-code:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      changes: *go_paths
+      when: on_success
+
+.rules-feature-go-soft:
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes: *go_paths
+      when: on_success
+      allow_failure: true
+
+.rules-dev-go-code:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      changes: *go_paths
+      when: on_success
+
 .rules-no-code-gate:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: never
     - changes: *rust_paths
       when: never
+    - changes: *go_paths
+      when: never
     - changes: *runtime_image_paths
+      when: never
+    - changes: *go_runtime_image_paths
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
@@ -94,6 +139,15 @@ variables:
     - changes: *runtime_image_paths
       when: on_success
     - when: never
+
+.rules-go-runtime-image:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: on_success
+    - changes: *go_runtime_image_paths
+      when: on_success
+    - when: never
+
 .rules-tag-only:
   rules:
     - if: "$CI_COMMIT_TAG"
@@ -140,5 +194,15 @@ workflow:
       changes:
         compare_to: "refs/heads/develop"
         paths: *runtime_image_paths
+      when: always
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes:
+        compare_to: "refs/heads/develop"
+        paths: *go_paths
+      when: always
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes:
+        compare_to: "refs/heads/develop"
+        paths: *go_runtime_image_paths
       when: always
     - when: never

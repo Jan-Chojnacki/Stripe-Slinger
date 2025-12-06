@@ -1,7 +1,7 @@
-coverage:
+raid-simulator-coverage:
   stage: quality
   needs:
-    - { job: tests, artifacts: true }
+    - { job: raid-simulator-tests, artifacts: true }
   script:
     - .gitlab/ci/scripts/coverage.sh
   artifacts:
@@ -15,19 +15,43 @@ coverage:
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]  
+    - !reference [.rules-mr-develop-code, rules]
     - !reference [.rules-dev-code, rules]
     - !reference [.rules-feature-code-soft, rules]
     - when: never
 
-cargo-audit:
+raid-simulator-audit:
   stage: quality
   script:
     - .gitlab/ci/scripts/cargo-audit.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]  
+    - !reference [.rules-mr-develop-code, rules]
     - !reference [.rules-dev-code, rules]
     - !reference [.rules-feature-code-soft, rules]
+    - when: never
+
+metrics-gateway-coverage:
+  stage: quality
+  needs:
+    - { job: metrics-gateway-tests, artifacts: true }
+  image:
+    name: $CI_GO_IMAGE
+    pull_policy: always
+  before_script:
+    - go version
+  script:
+    - .gitlab/ci/scripts/go-coverage.sh
+  artifacts:
+    when: always
+    paths:
+      - services/metrics-gateway/coverage.out
+    expire_in: 1 week
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-go-code, rules]
+    - !reference [.rules-mr-develop-go-code, rules]
+    - !reference [.rules-dev-go-code, rules]
+    - !reference [.rules-feature-go-soft, rules]
     - when: never

@@ -1,23 +1,57 @@
-fmt:
+raid-simulator-fmt:
   stage: checks
   script:
     - .gitlab/ci/scripts/fmt.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules] 
-    - !reference [.rules-dev-code, rules]          
-    - !reference [.rules-feature-code-soft, rules] 
+    - !reference [.rules-mr-develop-code, rules]
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
     - when: never
 
-clippy:
+raid-simulator-lint:
   stage: checks
   script:
     - .gitlab/ci/scripts/clippy.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]  
-    - !reference [.rules-dev-code, rules]         
+    - !reference [.rules-mr-develop-code, rules]
+    - !reference [.rules-dev-code, rules]
     - !reference [.rules-feature-code-soft, rules]
+    - when: never
+
+metrics-gateway-fmt:
+  stage: checks
+  image:
+    name: $CI_GO_IMAGE
+    pull_policy: always
+  before_script:
+    - go version
+  script:
+    - .gitlab/ci/scripts/go-fmt.sh
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-go-code, rules]
+    - !reference [.rules-mr-develop-go-code, rules]
+    - !reference [.rules-dev-go-code, rules]
+    - !reference [.rules-feature-go-soft, rules]
+    - when: never
+
+metrics-gateway-lint:
+  stage: checks
+  image:
+    name: $CI_GO_IMAGE
+    pull_policy: always
+  before_script:
+    - go version
+  script:
+    - .gitlab/ci/scripts/go-lint.sh
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-go-code, rules]
+    - !reference [.rules-mr-develop-go-code, rules]
+    - !reference [.rules-dev-go-code, rules]
+    - !reference [.rules-feature-go-soft, rules]
     - when: never
