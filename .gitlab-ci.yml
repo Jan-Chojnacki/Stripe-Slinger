@@ -191,6 +191,8 @@ workflow:
       when: always
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: always
     - if: '$CI_COMMIT_BRANCH == "develop"'
@@ -214,6 +216,8 @@ workflow:
       changes:
         compare_to: "refs/heads/develop"
         paths: *go_runtime_image_paths
+      when: always
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\// && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"'
       when: always
     - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
       when: always
