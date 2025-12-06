@@ -1,4 +1,4 @@
-docker-build-and-push:
+raid-simulator-image:
   stage: build & push
   image: docker:25
   services:
@@ -7,17 +7,39 @@ docker-build-and-push:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    IMAGE_NAME: "raid-simulator"
+    DOCKER_BUILD_CONTEXT: "services/raid-simulator"
+    DOCKERFILE_PATH: "services/raid-simulator/Dockerfile"
   before_script: []
   script:
     - .gitlab/ci/scripts/docker-build-and-push.sh
   rules:
     - !reference [.rules-docker-build-and-push, rules]
 
+metrics-gateway-image:
+  stage: build & push
+  image: docker:25
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    IMAGE_NAME: "metrics-gateway"
+    DOCKER_BUILD_CONTEXT: "services/metrics-gateway"
+    DOCKERFILE_PATH: "services/metrics-gateway/Dockerfile"
+  before_script: []
+  script:
+    - .gitlab/ci/scripts/docker-build-and-push.sh
+  rules:
+    - !reference [.rules-docker-build-and-push-go, rules]
+
 release:
   stage: release
   image: alpine:3.20
   needs:
-    - docker-build-and-push
+    - raid-simulator-image
+    - metrics-gateway-image
   script:
     - .gitlab/ci/scripts/gitlab-release-from-tag.sh
   rules:
