@@ -1,0 +1,23 @@
+raid-simulator-fmt:
+  stage: checks
+  script:
+    - .gitlab/ci/raid-simulator/scripts/fmt.sh
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-code, rules]
+    - !reference [.rules-mr-develop-code, rules]
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
+    - when: never
+
+raid-simulator-lint:
+  stage: checks
+  script:
+    - .gitlab/ci/raid-simulator/scripts/clippy.sh
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-code, rules]
+    - !reference [.rules-mr-develop-code, rules]
+    - !reference [.rules-dev-code, rules]
+    - !reference [.rules-feature-code-soft, rules]
+    - when: never
