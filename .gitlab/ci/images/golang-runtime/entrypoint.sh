@@ -4,7 +4,7 @@ umask 002
 
 echo "[entrypoint] Starting CI entrypoint for golang runtime..."
 
-if [ -n "$CI_PROJECT_DIR" ] && [ -d "$CI_PROJECT_DIR" ]; then
+if [ -n "${CI_PROJECT_DIR:-}" ] && [ -d "${CI_PROJECT_DIR:-}" ]; then
   echo "[entrypoint] Ensuring correct ownership for project directory..."
   chown -R ci:ci "$CI_PROJECT_DIR" || true
 fi
