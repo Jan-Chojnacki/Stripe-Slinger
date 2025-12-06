@@ -12,6 +12,7 @@ export LLVM_COV_FLAGS="${LLVM_COV_FLAGS:-} -use-color=0"
 mkdir -p reports
 
 report_out=$(cargo llvm-cov report \
+  --manifest-path "$RUST_PROJECT_DIR/Cargo.toml" \
   --ignore-filename-regex='/.cargo/|/rustc/')
 
 rate=$(
