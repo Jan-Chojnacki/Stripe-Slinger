@@ -14,10 +14,10 @@ ENV CARGO_HOME=/home/ci/.cargo \
 
 WORKDIR /build
 
-COPY setup-rust-runtime.sh /usr/local/bin/setup-rust-runtime
-COPY entrypoint.sh         /usr/local/bin/entrypoint
+COPY setup.sh      /usr/local/bin/setup
+COPY entrypoint.sh /usr/local/bin/entrypoint
 
-RUN chmod +x /usr/local/bin/setup-rust-runtime /usr/local/bin/entrypoint \
-    && /usr/local/bin/setup-rust-runtime
+RUN chmod +x /usr/local/bin/setup /usr/local/bin/entrypoint \
+    && /usr/local/bin/setup
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
