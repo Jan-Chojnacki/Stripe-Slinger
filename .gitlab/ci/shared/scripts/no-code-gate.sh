@@ -1,4 +1,4 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 echo "non-code change detected; skipping Rust pipeline"

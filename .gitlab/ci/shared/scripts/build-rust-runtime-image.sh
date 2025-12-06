@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 : "${CI_RUST_VERSION:?required}"
 : "${CI_REGISTRY_IMAGE:?required}"

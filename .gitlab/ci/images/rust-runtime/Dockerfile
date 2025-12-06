@@ -1,46 +1,23 @@
 ARG RUST_VERSION=1.91.0
 FROM rust:${RUST_VERSION}
 
+ARG RUST_VERSION
 ARG DEBIAN_SNAPSHOT=20240601T000000Z
-RUN set -eux; \
-    rm -f /etc/apt/sources.list.d/debian.sources; \
-    echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bookworm main" > /etc/apt/sources.list; \
-    echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/ bookworm-security main" >> /etc/apt/sources.list; \
-    apt-get -o Acquire::Check-Valid-Until=false update; \
-    apt-get install -y --no-install-recommends \
-      build-essential pkg-config libssl-dev ca-certificates jq curl \
-      util-linux \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m -u 1000 ci \
-    && mkdir -p /home/ci/.cargo /home/ci/.rustup /home/ci/target \
-    && chown -R ci:ci /home/ci
+ARG NEXTEST_VERSION=0.9.110
+ARG LLVM_COV_VERSION=0.6.21
+ARG CARGO_AUDIT_VERSION=0.21.2
 
 ENV CARGO_HOME=/home/ci/.cargo \
     RUSTUP_HOME=/home/ci/.rustup \
     PATH=/home/ci/.cargo/bin:$PATH \
     CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-RUN set -eux; \
-    install -d -o ci -g ci /home/ci/.cargo /home/ci/.rustup; \
-    curl -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh; \
-    chown ci:ci /tmp/rustup-init.sh; \
-    su -s /bin/sh -c 'sh /tmp/rustup-init.sh -y --default-toolchain '"${RUST_VERSION}"' --profile minimal' ci; \
-    rm /tmp/rustup-init.sh; \
-    su -s /bin/sh -c 'rustup default '"${RUST_VERSION}"' && rustup component add --toolchain '"${RUST_VERSION}"' rustfmt clippy llvm-tools-preview' ci
-
-ARG NEXTEST_VERSION=0.9.110
-RUN su -s /bin/sh -c 'cargo install --locked cargo-nextest --version '"${NEXTEST_VERSION}" ci
-
-ARG LLVM_COV_VERSION=0.6.21
-RUN su -s /bin/sh -c 'cargo install --locked cargo-llvm-cov --version '"${LLVM_COV_VERSION}" ci
-
-ARG CARGO_AUDIT_VERSION=0.21.2
-RUN su -s /bin/sh -c 'cargo install --locked cargo-audit --version '"${CARGO_AUDIT_VERSION}" ci
-
 WORKDIR /build
 
-COPY entrypoint.sh /usr/local/bin/entrypoint
-RUN chmod +x /usr/local/bin/entrypoint
+COPY setup-rust-runtime.sh /usr/local/bin/setup-rust-runtime
+COPY entrypoint.sh         /usr/local/bin/entrypoint
+
+RUN chmod +x /usr/local/bin/setup-rust-runtime /usr/local/bin/entrypoint \
+    && /usr/local/bin/setup-rust-runtime
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]

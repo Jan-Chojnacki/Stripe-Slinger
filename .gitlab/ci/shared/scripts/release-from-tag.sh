@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 : "${CI_API_V4_URL:?CI_API_V4_URL required}"
 : "${CI_PROJECT_ID:?CI_PROJECT_ID required}"

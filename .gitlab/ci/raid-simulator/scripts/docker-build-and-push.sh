@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 : "${CI_REGISTRY:?CI_REGISTRY required}"
 : "${CI_REGISTRY_IMAGE:?CI_REGISTRY_IMAGE required}"

@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 : "${GO_PROJECT_DIR:?GO_PROJECT_DIR required}"
 
