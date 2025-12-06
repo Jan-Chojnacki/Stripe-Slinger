@@ -5,6 +5,8 @@ set -eu
 
 cd "$GO_PROJECT_DIR"
 
+echo "[metrics-gateway-coverage] Starting Go coverage report job..."
+
 if [ ! -f coverage.out ]; then
   echo "[metrics-gateway-coverage] coverage.out not found; did metrics-gateway-tests run and publish artifacts?"
   exit 1
@@ -34,3 +36,5 @@ if [ "${CI_COMMIT_BRANCH:-}" = "master" ] || {
 else
   echo "[metrics-gateway-coverage] Soft Go coverage check (branch): $rate"
 fi
+
+echo "[metrics-gateway-coverage] Coverage job completed."

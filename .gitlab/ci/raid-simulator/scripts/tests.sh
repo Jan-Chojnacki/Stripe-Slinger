@@ -3,6 +3,7 @@ set -eu
 
 : "${RUST_PROJECT_DIR:?RUST_PROJECT_DIR required}"
 
+echo "[raid-simulator-tests] Starting Rust tests with coverage (llvm-cov nextest)..."
 echo "[raid-simulator-tests] Preparing coverage target directories..."
 
 rm -rf target/llvm-cov-target target/llvm-cov-target-* target/nextest
@@ -18,4 +19,4 @@ cargo llvm-cov nextest \
 echo "[raid-simulator-tests] Packaging coverage data into cov.tar.gz..."
 tar czf cov.tar.gz -C target llvm-cov-target
 
-echo "[raid-simulator-tests] Tests and coverage collection finished (cov.tar.gz created)"
+echo "[raid-simulator-tests] Tests and coverage collection finished; tests job completed (cov.tar.gz created)."

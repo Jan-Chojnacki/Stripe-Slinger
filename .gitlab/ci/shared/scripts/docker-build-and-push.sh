@@ -14,8 +14,9 @@ set -eu
 IMAGE_REPO="${CI_REGISTRY_IMAGE}/${IMAGE_NAME}"
 IMAGE_CI_TAG="${IMAGE_REPO}:ci-${CI_COMMIT_SHORT_SHA}"
 
+echo "[docker-build] Starting docker image build job for ${IMAGE_NAME}..."
 echo "[docker-build] Building image ${IMAGE_CI_TAG}"
-echo "[docker-build]   context:  ${DOCKER_BUILD_CONTEXT}"
+echo "[docker-build]   context:   ${DOCKER_BUILD_CONTEXT}"
 echo "[docker-build]   dockerfile: ${DOCKERFILE_PATH}"
 
 docker build -t "${IMAGE_CI_TAG}" -f "${DOCKERFILE_PATH}" "${DOCKER_BUILD_CONTEXT}"
@@ -39,4 +40,4 @@ else
   echo "[docker-build] Not tagging latest or release (branch=${CI_COMMIT_BRANCH:-}, tag=${CI_COMMIT_TAG:-})"
 fi
 
-echo "[docker-build] Done for ${IMAGE_NAME}"
+echo "[docker-build] Docker image build job completed for ${IMAGE_NAME}."

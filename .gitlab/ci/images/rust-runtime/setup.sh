@@ -7,6 +7,8 @@ set -eu
 : "${LLVM_COV_VERSION:?LLVM_COV_VERSION is required}"
 : "${CARGO_AUDIT_VERSION:?CARGO_AUDIT_VERSION is required}"
 
+echo "[rust-runtime-setup] Starting Rust CI runtime setup..."
+
 echo "[rust-runtime-setup] Configuring Debian APT snapshot sources..."
 rm -f /etc/apt/sources.list.d/debian.sources
 echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bookworm main" > /etc/apt/sources.list

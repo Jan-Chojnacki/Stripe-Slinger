@@ -23,7 +23,7 @@ raid-simulator-coverage:
 raid-simulator-audit:
   stage: quality
   script:
-    - .gitlab/ci/raid-simulator/scripts/cargo-audit.sh
+    - .gitlab/ci/raid-simulator/scripts/audit.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-code, rules]

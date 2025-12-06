@@ -3,6 +3,7 @@ set -eu
 
 : "${RUST_PROJECT_DIR:?RUST_PROJECT_DIR required}"
 
+echo "[raid-simulator-coverage] Starting Rust coverage report job..."
 echo "[raid-simulator-coverage] Preparing local coverage workspace..."
 
 rm -rf target
@@ -47,3 +48,5 @@ if [ "${CI_COMMIT_BRANCH:-}" = "master" ] || {
 else
   echo "[raid-simulator-coverage] Soft coverage check (branch): $rate"
 fi
+
+echo "[raid-simulator-coverage] Coverage job completed."
