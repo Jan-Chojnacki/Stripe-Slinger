@@ -185,7 +185,6 @@ include:
   - local: ".gitlab/ci/metrics-gateway/jobs/quality.yml"
   - local: ".gitlab/ci/shared/jobs/release.yml"
 
-
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
