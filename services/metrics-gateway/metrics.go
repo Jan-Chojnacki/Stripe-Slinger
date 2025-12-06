@@ -170,6 +170,6 @@ func NewFuseMetrics(reg prometheus.Registerer) *FuseMetrics {
 func NewProcessMetrics(reg prometheus.Registerer) *ProcessMetrics {
 	return &ProcessMetrics{
 		CPUSeconds:     newGauge(reg, "process_cpu_seconds", "Simulated CPU seconds used by the RAID simulator"),
-		ResidentMemory: newGauge(reg, "process_resident_memory", "Simulated resident memory (bytes) "),
+		ResidentMemory: newGauge(reg, "process_resident_memory", "Simulated resident memory (bytes)"),
 	}
 }
