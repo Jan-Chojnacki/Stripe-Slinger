@@ -11,46 +11,36 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"metrics-gateway/internal/metrics"
+	"metrics-gateway/internal/server"
+	"metrics-gateway/internal/simulator"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	reg, allMetrics := NewMetricsRegistry()
+	reg, allMetrics := metrics.NewMetricsRegistry()
 
 	diskIDs := []string{"disk0", "disk1", "disk2", "disk3"}
 	raidIDs := []string{"raid0", "raid1", "raid3"}
 
-	simulator := NewSimulator(allMetrics, diskIDs, raidIDs)
+	sim := simulator.NewSimulator(allMetrics, diskIDs, raidIDs)
 
 	var wg sync.WaitGroup
-	simulator.Start(ctx, &wg, 1*time.Second)
-
-	mux := http.NewServeMux()
-
-	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok\n"))
-	})
+	sim.Start(ctx, &wg, 1*time.Second)
 
 	addr := ":8080"
 	if port := os.Getenv("METRICS_PORT"); port != "" {
 		addr = ":" + port
 	}
 
-	server := &http.Server{
-		Addr:    addr,
-		Handler: mux,
-	}
+	srv := server.NewHTTPServer(addr, reg)
 
 	go func() {
 		log.Printf("Starting metrics server on %s", addr)
 
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("HTTP server error: %v", err)
 		}
 	}()
@@ -61,7 +51,7 @@ func main() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)
 	}
 

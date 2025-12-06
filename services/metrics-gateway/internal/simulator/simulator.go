@@ -1,14 +1,16 @@
-package main
+package simulator
 
 import (
 	"context"
 	"math/rand"
 	"sync"
 	"time"
+
+	"metrics-gateway/internal/metrics"
 )
 
 type Simulator struct {
-	metrics *AllMetrics
+	metrics *metrics.AllMetrics
 	diskIDs []string
 	raidIDs []string
 
@@ -17,12 +19,12 @@ type Simulator struct {
 	memoryBytes float64
 }
 
-func NewSimulator(metrics *AllMetrics, diskIDs, raidIDs []string) *Simulator {
+func NewSimulator(m *metrics.AllMetrics, diskIDs, raidIDs []string) *Simulator {
 	src := rand.NewSource(time.Now().UnixNano())
 	rnd := rand.New(src)
 
 	s := &Simulator{
-		metrics: metrics,
+		metrics: m,
 		diskIDs: diskIDs,
 		raidIDs: raidIDs,
 		rnd:     rnd,
@@ -97,7 +99,7 @@ func (s *Simulator) simulateRaid() {
 	}
 }
 
-func (s *Simulator) simulateRaidVolume(m *RaidMetrics, raid string) {
+func (s *Simulator) simulateRaidVolume(m *metrics.RaidMetrics, raid string) {
 	reads := float64(s.rnd.Intn(400))
 	writes := float64(s.rnd.Intn(400))
 
@@ -107,7 +109,7 @@ func (s *Simulator) simulateRaidVolume(m *RaidMetrics, raid string) {
 	s.updateRaidSpecificMetrics(m, raid)
 }
 
-func (s *Simulator) updateRaidIO(m *RaidMetrics, raid string, reads, writes float64) {
+func (s *Simulator) updateRaidIO(m *metrics.RaidMetrics, raid string, reads, writes float64) {
 	m.ReadOps.WithLabelValues(raid).Add(reads)
 	m.WriteOps.WithLabelValues(raid).Add(writes)
 
@@ -118,7 +120,7 @@ func (s *Simulator) updateRaidIO(m *RaidMetrics, raid string, reads, writes floa
 	m.WriteBytes.WithLabelValues(raid).Add(writes * writeBytesPerOp)
 }
 
-func (s *Simulator) updateRaidLatency(m *RaidMetrics, raid string) {
+func (s *Simulator) updateRaidLatency(m *metrics.RaidMetrics, raid string) {
 	readLatency := 0.0002 + s.rnd.Float64()*0.004
 	writeLatency := 0.0002 + s.rnd.Float64()*0.004
 
@@ -126,7 +128,7 @@ func (s *Simulator) updateRaidLatency(m *RaidMetrics, raid string) {
 	m.WriteLatency.WithLabelValues(raid).Set(writeLatency)
 }
 
-func (s *Simulator) updateRaidHealth(m *RaidMetrics, raid string) {
+func (s *Simulator) updateRaidHealth(m *metrics.RaidMetrics, raid string) {
 	degraded := s.rnd.Float64() < 0.05
 	if !degraded {
 		s.resetRaidHealth(m, raid)
@@ -142,7 +144,7 @@ func (s *Simulator) updateRaidHealth(m *RaidMetrics, raid string) {
 	m.RebuildInProgress.WithLabelValues(raid).Set(rebuild)
 }
 
-func (s *Simulator) resetRaidHealth(m *RaidMetrics, raid string) {
+func (s *Simulator) resetRaidHealth(m *metrics.RaidMetrics, raid string) {
 	m.DegradedState.WithLabelValues(raid).Set(0)
 	m.FailedDisks.WithLabelValues(raid).Set(0)
 	m.RebuildInProgress.WithLabelValues(raid).Set(0)
@@ -152,7 +154,7 @@ func (s *Simulator) resetRaidHealth(m *RaidMetrics, raid string) {
 	}
 }
 
-func (s *Simulator) simulateRaidRebuild(m *RaidMetrics, raid string) float64 {
+func (s *Simulator) simulateRaidRebuild(m *metrics.RaidMetrics, raid string) float64 {
 	if s.rnd.Float64() >= 0.7 {
 		if raid == "raid1" {
 			m.Raid1Resync.WithLabelValues(raid).Set(0)
@@ -167,7 +169,7 @@ func (s *Simulator) simulateRaidRebuild(m *RaidMetrics, raid string) float64 {
 	return 1
 }
 
-func (s *Simulator) updateRaidSpecificMetrics(m *RaidMetrics, raid string) {
+func (s *Simulator) updateRaidSpecificMetrics(m *metrics.RaidMetrics, raid string) {
 	switch raid {
 	case "raid1":
 		for _, diskID := range s.diskIDs {
