@@ -1,0 +1,7 @@
+# Ignore everything by default
+*
+
+# Keep only files needed to build this image
+!Dockerfile
+!entrypoint.sh
+!setup.sh
