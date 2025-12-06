@@ -1,0 +1,9 @@
+# Local environment for infra stack (Grafana Alloy, etc.)
+.env
+
+# Grafana Alloy runtime data (WAL, cache, remote config)
+alloy-data/
+
+# Local Docker Compose overrides (not shared in repo)
+docker-compose.override.yml
+
