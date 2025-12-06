@@ -7,7 +7,6 @@ cd "$GO_PROJECT_DIR"
 
 echo "[metrics-gateway-fmt] Checking gofmt formatting..."
 
-# List files that would be reformatted
 fmt_output="$(gofmt -l . || true)"
 
 if [ -n "$fmt_output" ]; then

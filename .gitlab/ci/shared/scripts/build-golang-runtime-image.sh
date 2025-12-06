@@ -6,14 +6,14 @@ set -euo pipefail
 : "${CI_REGISTRY:?CI_REGISTRY required}"
 : "${CI_JOB_TOKEN:?CI_JOB_TOKEN required}"
 
-GO_RUNTIME_IMAGE_REPO="${GO_RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/go-runtime}"
+GO_RUNTIME_IMAGE_REPO="${GO_RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/golang-runtime}"
 GO_RUNTIME_BASE_IMAGE="${GO_RUNTIME_BASE_IMAGE:-golang:${CI_GO_VERSION}}"
 
 FILES_HASH="$(
   {
-    find .gitlab/ci/images/go-runtime -type f -print
-    echo .gitlab/ci/runtime-image.yml
-    echo .gitlab/ci/scripts/build-go-runtime-image.sh
+    find .gitlab/ci/images/golang-runtime -type f -print
+    echo .gitlab/ci/shared/jobs/runtime-image.yml
+    echo .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
   } | LC_ALL=C sort |
   while IFS= read -r f; do
     cat "$f"
@@ -62,9 +62,9 @@ fi
 
 docker build --pull \
   --build-arg GO_VERSION="$CI_GO_VERSION" \
-  -f .gitlab/ci/images/go-runtime/Dockerfile \
+  -f .gitlab/ci/images/golang-runtime/Dockerfile \
   -t "$IMMUTABLE_TAG" \
-  .gitlab/ci/images/go-runtime
+  .gitlab/ci/images/golang-runtime
 
 docker push "$IMMUTABLE_TAG"
 docker tag "$IMMUTABLE_TAG" "$MOVING_TAG"

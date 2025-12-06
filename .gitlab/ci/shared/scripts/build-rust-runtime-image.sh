@@ -6,14 +6,14 @@ set -euo pipefail
 : "${CI_REGISTRY:?required}"
 : "${CI_JOB_TOKEN:?required}"
 
-RUNTIME_IMAGE_REPO="${RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/runtime}"
+RUNTIME_IMAGE_REPO="${RUNTIME_IMAGE_REPO:-$CI_REGISTRY_IMAGE/rust-runtime}"
 RUNTIME_BASE_IMAGE="${RUNTIME_BASE_IMAGE:-rust:${CI_RUST_VERSION}}"
 
 FILES_HASH="$(
   {
-    find .gitlab/ci/images/runtime -type f -print
-    echo .gitlab/ci/runtime-image.yml
-    echo .gitlab/ci/scripts/build-runtime-image.sh
+    find .gitlab/ci/images/rust-runtime -type f -print
+    echo .gitlab/ci/shared/jobs/runtime-image.yml
+    echo .gitlab/ci/shared/scripts/build-rust-runtime-image.sh
   } | LC_ALL=C sort |
   while IFS= read -r f; do
     cat "$f"
@@ -62,9 +62,9 @@ fi
 
 docker build --pull \
   --build-arg RUST_VERSION="$CI_RUST_VERSION" \
-  -f .gitlab/ci/images/runtime/Dockerfile \
+  -f .gitlab/ci/images/rust-runtime/Dockerfile \
   -t "$IMMUTABLE_TAG" \
-  .gitlab/ci/images/runtime
+  .gitlab/ci/images/rust-runtime
 
 docker push "$IMMUTABLE_TAG"
 docker tag "$IMMUTABLE_TAG" "$MOVING_TAG"

@@ -1,20 +1,3 @@
-raid-simulator-tests:
-  stage: checks
-  script:
-    - .gitlab/ci/scripts/tests.sh
-  artifacts:
-    when: always
-    paths:
-      - cov.tar.gz
-    expire_in: 1 day
-  rules:
-    - !reference [.rules-master-always, rules]
-    - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]
-    - !reference [.rules-dev-code, rules]
-    - !reference [.rules-feature-code-soft, rules]
-    - when: never
-
 metrics-gateway-tests:
   stage: checks
   image:
@@ -23,7 +6,7 @@ metrics-gateway-tests:
   before_script:
     - go version
   script:
-    - .gitlab/ci/scripts/go-tests.sh
+    - .gitlab/ci/metrics-gateway/scripts/tests.sh
   artifacts:
     when: always
     paths:

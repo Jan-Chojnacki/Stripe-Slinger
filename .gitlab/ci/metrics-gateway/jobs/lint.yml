@@ -1,27 +1,3 @@
-raid-simulator-fmt:
-  stage: checks
-  script:
-    - .gitlab/ci/scripts/fmt.sh
-  rules:
-    - !reference [.rules-master-always, rules]
-    - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]
-    - !reference [.rules-dev-code, rules]
-    - !reference [.rules-feature-code-soft, rules]
-    - when: never
-
-raid-simulator-lint:
-  stage: checks
-  script:
-    - .gitlab/ci/scripts/clippy.sh
-  rules:
-    - !reference [.rules-master-always, rules]
-    - !reference [.rules-mr-master-code, rules]
-    - !reference [.rules-mr-develop-code, rules]
-    - !reference [.rules-dev-code, rules]
-    - !reference [.rules-feature-code-soft, rules]
-    - when: never
-
 metrics-gateway-fmt:
   stage: checks
   image:
@@ -30,7 +6,7 @@ metrics-gateway-fmt:
   before_script:
     - go version
   script:
-    - .gitlab/ci/scripts/go-fmt.sh
+    - .gitlab/ci/metrics-gateway/scripts/fmt.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-go-code, rules]
@@ -47,7 +23,7 @@ metrics-gateway-lint:
   before_script:
     - go version
   script:
-    - .gitlab/ci/scripts/go-lint.sh
+    - .gitlab/ci/metrics-gateway/scripts/lint.sh
   rules:
     - !reference [.rules-master-always, rules]
     - !reference [.rules-mr-master-go-code, rules]

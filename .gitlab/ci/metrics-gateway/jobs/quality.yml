@@ -1,0 +1,23 @@
+metrics-gateway-coverage:
+  stage: quality
+  needs:
+    - { job: metrics-gateway-tests, artifacts: true }
+  image:
+    name: $CI_GO_IMAGE
+    pull_policy: always
+  before_script:
+    - go version
+  script:
+    - .gitlab/ci/metrics-gateway/scripts/coverage.sh
+  artifacts:
+    when: always
+    paths:
+      - services/metrics-gateway/coverage.out
+    expire_in: 1 week
+  rules:
+    - !reference [.rules-master-always, rules]
+    - !reference [.rules-mr-master-go-code, rules]
+    - !reference [.rules-mr-develop-go-code, rules]
+    - !reference [.rules-dev-go-code, rules]
+    - !reference [.rules-feature-go-soft, rules]
+    - when: never

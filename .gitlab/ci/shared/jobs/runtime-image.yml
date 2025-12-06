@@ -9,10 +9,10 @@ raid-simulator-runtime-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/runtime"
+    RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/rust-runtime"
     RUNTIME_BASE_IMAGE: "rust:${CI_RUST_VERSION}"
   script:
-    - .gitlab/ci/scripts/build-runtime-image.sh
+    - .gitlab/ci/shared/scripts/build-rust-runtime-image.sh
   rules:
     - !reference [.rules-runtime-image, rules]
 
@@ -27,9 +27,9 @@ metrics-gateway-runtime-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    GO_RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/go-runtime"
+    GO_RUNTIME_IMAGE_REPO: "$CI_REGISTRY_IMAGE/golang-runtime"
     GO_RUNTIME_BASE_IMAGE: "golang:${CI_GO_VERSION}"
   script:
-    - .gitlab/ci/scripts/build-go-runtime-image.sh
+    - .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
   rules:
     - !reference [.rules-go-runtime-image, rules]

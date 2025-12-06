@@ -12,7 +12,7 @@ raid-simulator-image:
     DOCKERFILE_PATH: "services/raid-simulator/Dockerfile"
   before_script: []
   script:
-    - .gitlab/ci/scripts/docker-build-and-push.sh
+    - .gitlab/ci/shared/scripts/docker-build-and-push.sh
   rules:
     - !reference [.rules-docker-build-and-push, rules]
 
@@ -30,7 +30,7 @@ metrics-gateway-image:
     DOCKERFILE_PATH: "services/metrics-gateway/Dockerfile"
   before_script: []
   script:
-    - .gitlab/ci/scripts/docker-build-and-push.sh
+    - .gitlab/ci/shared/scripts/docker-build-and-push.sh
   rules:
     - !reference [.rules-docker-build-and-push-go, rules]
 
@@ -41,6 +41,6 @@ release:
     - raid-simulator-image
     - metrics-gateway-image
   script:
-    - .gitlab/ci/scripts/gitlab-release-from-tag.sh
+    - .gitlab/ci/shared/scripts/release-from-tag.sh
   rules:
     - !reference [.rules-tag-only, rules]

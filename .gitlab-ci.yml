@@ -15,12 +15,12 @@ variables:
   CARGO_TERM_COLOR: always
 
   CI_RUST_VERSION: "1.91"
-  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/runtime:rust-$CI_RUST_VERSION"
+  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/rust-runtime:rust-$CI_RUST_VERSION"
   RUSTFLAGS: "-C debuginfo=2"
   RUST_PROJECT_DIR: "services/raid-simulator"
 
   CI_GO_VERSION: "1.25"
-  CI_GO_IMAGE: "$CI_REGISTRY_IMAGE/go-runtime:go-$CI_GO_VERSION"
+  CI_GO_IMAGE: "$CI_REGISTRY_IMAGE/golang-runtime:go-$CI_GO_VERSION"
   GO_PROJECT_DIR: "services/metrics-gateway"
 
 .rust-change-paths: &rust_paths
@@ -41,16 +41,16 @@ variables:
   - "services/metrics-gateway/go.sum"
 
 .runtime-image-change-paths: &runtime_image_paths
-  - .gitlab/ci/images/runtime/Dockerfile
-  - .gitlab/ci/images/runtime/**/*
-  - .gitlab/ci/runtime-image.yml
-  - .gitlab/ci/scripts/build-runtime-image.sh
+  - .gitlab/ci/images/rust-runtime/Dockerfile
+  - .gitlab/ci/images/rust-runtime/**/*
+  - .gitlab/ci/shared/jobs/runtime-image.yml
+  - .gitlab/ci/shared/scripts/build-rust-runtime-image.sh
 
 .go-runtime-image-change-paths: &go_runtime_image_paths
-  - .gitlab/ci/images/go-runtime/Dockerfile
-  - .gitlab/ci/images/go-runtime/**/*
-  - .gitlab/ci/runtime-image.yml
-  - .gitlab/ci/scripts/build-go-runtime-image.sh
+  - .gitlab/ci/images/golang-runtime/Dockerfile
+  - .gitlab/ci/images/golang-runtime/**/*
+  - .gitlab/ci/shared/jobs/runtime-image.yml
+  - .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
 
 .rules-master-always:
   rules:
@@ -175,12 +175,15 @@ default:
     - cargo --version
 
 include:
-  - local: ".gitlab/ci/runtime-image.yml"
-  - local: ".gitlab/ci/no-code-gate.yml"
-  - local: ".gitlab/ci/lint.yml"
-  - local: ".gitlab/ci/test.yml"
-  - local: ".gitlab/ci/quality.yml"
-  - local: ".gitlab/ci/release.yml"
+  - local: ".gitlab/ci/shared/jobs/runtime-image.yml"
+  - local: ".gitlab/ci/shared/jobs/no-code-gate.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/lint.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/tests.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/quality.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/lint.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/tests.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/quality.yml"
+  - local: ".gitlab/ci/shared/jobs/release.yml"
 
 workflow:
   rules:
