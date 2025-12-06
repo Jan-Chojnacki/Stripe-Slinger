@@ -6,6 +6,8 @@ rm -f cov.tar.gz cov-*.tar.gz
 
 export CARGO_TARGET_DIR=target/llvm-cov-target
 
-cargo llvm-cov nextest --workspace --all-features --no-report
+cargo llvm-cov nextest \
+  --manifest-path "$RUST_PROJECT_DIR/Cargo.toml" \
+  --workspace --all-features --no-report
 
 tar czf cov.tar.gz -C target llvm-cov-target

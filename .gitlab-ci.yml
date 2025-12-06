@@ -16,6 +16,7 @@ variables:
   CI_RUST_VERSION: "1.91"
   CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/runtime:rust-$CI_RUST_VERSION"
   RUSTFLAGS: "-C debuginfo=2"
+  RUST_PROJECT_DIR: "services/raid-simulator"
 
 .rust-change-paths: &rust_paths
   - "**/*.rs"
@@ -79,7 +80,7 @@ variables:
 
 .rules-docker-build-and-push:
   rules:
-    - if: '$CI_COMMIT_TAG'
+    - if: "$CI_COMMIT_TAG"
       when: on_success
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes: *rust_paths
@@ -95,14 +96,14 @@ variables:
     - when: never
 .rules-tag-only:
   rules:
-    - if: '$CI_COMMIT_TAG'
+    - if: "$CI_COMMIT_TAG"
       when: on_success
     - when: never
 
 default:
   image:
-    name: $CI_RUST_IMAGE         
-    pull_policy: always          
+    name: $CI_RUST_IMAGE
+    pull_policy: always
   tags:
     - primary
   interruptible: true
@@ -124,7 +125,7 @@ workflow:
       when: always
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
-    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
       when: never
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: always
@@ -132,12 +133,12 @@ workflow:
       when: always
     - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
       changes:
-        compare_to: 'refs/heads/develop'
+        compare_to: "refs/heads/develop"
         paths: *rust_paths
       when: always
     - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
       changes:
-        compare_to: 'refs/heads/develop'
+        compare_to: "refs/heads/develop"
         paths: *runtime_image_paths
       when: always
     - when: never
