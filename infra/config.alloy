@@ -1,0 +1,37 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_PROM_PASSWORD")
+    }
+  }
+}
+
+prometheus.scrape "raid_metrics" {
+  targets = [
+    { __address__ = "metrics-gateway:8080" },
+  ]
+
+  scrape_interval = "5s"
+  scrape_timeout  = "2s"
+
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.scrape "cadvisor" {
+  targets = [
+    { __address__ = "cadvisor:8080" },
+  ]
+
+  scrape_interval = "10s"
+  scrape_timeout  = "5s"
+
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
