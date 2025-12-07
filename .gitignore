@@ -109,3 +109,5 @@ Desktop.ini
 *.swo
 *.bak
 
+/target
+/crates/*/target
