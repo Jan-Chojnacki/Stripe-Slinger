@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o metrics-gateway .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o metrics-gateway ./cmd/metrics-gateway
 
 FROM gcr.io/distroless/base-debian12
 
