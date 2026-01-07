@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package metrics.v1;
+
+option go_package = "metrics-gateway/internal/pb/metrics/v1;metricsv1";
+
+import "google/protobuf/timestamp.proto";
+
+service MetricsIngestor {
+  rpc Push(stream MetricsBatch) returns (PushResponse);
+}
+
+message MetricsBatch {
+  string source_id = 1;
+  uint64 seq_no = 2;
+  google.protobuf.Timestamp timestamp = 3;
+
+  repeated DiskOp disk_ops = 10;
+  repeated DiskState disk_states = 11;
+
+  repeated RaidOp raid_ops = 20;
+  repeated RaidState raid_states = 21;
+
+  repeated FuseOp fuse_ops = 30;
+
+  ProcessSample process = 40;
+}
+
+enum IoOpType {
+  IO_OP_UNSPECIFIED = 0;
+  IO_OP_READ = 1;
+  IO_OP_WRITE = 2;
+}
+
+message DiskOp {
+  string disk_id = 1;
+  IoOpType op = 2;
+  uint64 bytes = 3;
+  double latency_seconds = 4;
+  bool error = 5;
+}
+
+message DiskState {
+  string disk_id = 1;
+  double queue_depth = 2;
+}
+
+message RaidOp {
+  string raid_id = 1;
+  IoOpType op = 2;
+  uint64 bytes = 3;
+  double latency_seconds = 4;
+  bool error = 5;
+
+  string served_from_disk_id = 10;
+
+  bool raid3_parity_read = 20;
+  bool raid3_parity_write = 21;
+  bool raid3_partial_stripe_write = 22;
+}
+
+message RaidState {
+  string raid_id = 1;
+
+  double raid1_resync_progress = 10;
+
+  bool degraded = 20;
+  uint32 failed_disks = 21;
+  bool rebuild_in_progress = 22;
+}
+
+enum FuseOpType {
+  FUSE_OP_UNSPECIFIED = 0;
+  FUSE_OP_READ = 1;
+  FUSE_OP_WRITE = 2;
+  FUSE_OP_OPEN = 3;
+  FUSE_OP_FSYNC = 4;
+}
+
+message FuseOp {
+  FuseOpType op = 1;
+  uint64 bytes = 2;
+  double latency_seconds = 3;
+  bool error = 4;
+}
+
+message ProcessSample {
+  double cpu_seconds = 1;
+  uint64 resident_memory_bytes = 2;
+}
+
+message PushResponse {
+  uint64 accepted_batches = 1;
+  uint64 accepted_samples = 2;
+  uint64 rejected_samples = 3;
+}

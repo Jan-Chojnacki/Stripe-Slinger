@@ -1,23 +1,60 @@
 services:
+  init-sockets:
+    image: alpine:3.20
+    container_name: init-sockets
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        mkdir -p /sockets
+        chown -R 65532:65532 /sockets
+        chmod 0770 /sockets
+    volumes:
+      - metrics-sockets:/sockets
+
   raid-simulator:
     build:
-      context: ../services/raid-simulator
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/raid-simulator/Dockerfile
     image: raid-simulator:latest
     container_name: raid-simulator
+    depends_on:
+      - init-sockets
+      - metrics-gateway
+    environment:
+      - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
+      - METRICS_SOURCE_ID=raid-simulator
+      - METRICS_INTERVAL_MS=1000
+      - METRICS_OPS_PER_TICK=200
+      - METRICS_QUEUE_CAP=2048
+      - METRICS_CONN_BUFFER=512
+      - METRICS_CONNECT_TIMEOUT_MS=2000
+      - METRICS_RPC_TIMEOUT_MS=5000
+      - METRICS_BACKOFF_INITIAL_MS=250
+      - METRICS_BACKOFF_MAX_MS=10000
+      - METRICS_JITTER_RATIO=0.2
+      - METRICS_SHUTDOWN_GRACE_MS=1500
+      - METRICS_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
+    volumes:
+      - metrics-sockets:/sockets
 
   metrics-gateway:
     build:
-      context: ../services/metrics-gateway
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: services/metrics-gateway/Dockerfile
     image: metrics-gateway:latest
     container_name: metrics-gateway
+    depends_on:
+      - init-sockets
     environment:
       - METRICS_PORT=8080
+      - GRPC_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
+      - GRPC_SOCKET_PATH=/sockets/metrics-gateway.sock
     ports:
       - "8083:8080"
-    depends_on:
-      - raid-simulator
+    volumes:
+      - metrics-sockets:/sockets
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
@@ -56,3 +93,6 @@ services:
 networks:
   default:
     name: stripe-slinger
+
+volumes:
+  metrics-sockets:
