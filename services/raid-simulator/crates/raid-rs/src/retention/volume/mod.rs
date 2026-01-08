@@ -83,11 +83,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         let _ = self.rebuild_all();
     }
 
-    /// This scans only the requested logical prefix (typically: filesystem metadata + used data),
-    /// relying on `Array::read()` read-repair writeback to populate missing/untrusted chunks.
-    ///
-    /// # Errors
-    /// Returns an error if any disk rebuild operation fails.
     pub fn rebuild_all_upto(&mut self, logical_end: u64) -> Result<()> {
         if self.layout.as_restore().is_none() {
             return Ok(());
@@ -105,10 +100,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         Ok(())
     }
 
-    /// Rebuild a single disk (must exist and be operational), up to a logical byte offset.
-    ///
-    /// # Errors
-    /// Returns an error if the disk index is invalid, missing, or rebuild fails.
     pub fn rebuild_disk_upto(&mut self, i: usize, logical_end: u64) -> Result<()> {
         if i >= D {
             anyhow::bail!("disk index out of range: {i} (D={D})");
@@ -132,23 +123,10 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         Ok(())
     }
 
-    /// Rebuild all disks that are present but marked as `needs_rebuild`.
-    ///
-    /// This is a full scan (logical capacity). Prefer [`Self::rebuild_all_upto`] from call sites
-    /// that know the "used" end of data (e.g. filesystem `next_free`) to avoid long startup times.
-    ///
-    /// # Errors
-    /// Returns an error if any disk rebuild operation fails.
     pub fn rebuild_all(&mut self) -> Result<()> {
         self.rebuild_all_upto(self.logical_capacity_bytes())
     }
 
-    /// Rebuild a single disk (must exist and be operational).
-    ///
-    /// This is a full scan (logical capacity). Prefer [`Self::rebuild_disk_upto`] when possible.
-    ///
-    /// # Errors
-    /// Returns an error if the disk index is invalid, missing, or rebuild fails.
     pub fn rebuild_disk(&mut self, i: usize) -> Result<()> {
         self.rebuild_disk_upto(i, self.logical_capacity_bytes())
     }

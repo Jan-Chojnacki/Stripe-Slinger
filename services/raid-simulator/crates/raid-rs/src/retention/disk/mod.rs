@@ -146,10 +146,6 @@ impl Disk {
         let n = dst.len();
         dst.copy_from_slice(&data[..n]);
 
-        // Flushing every tiny write (our default chunk size is 4 bytes) makes startup rebuild and
-        // read-repair extremely slow and can delay the FUSE mount from appearing.
-        // This is a simulator; relying on the OS page cache is enough for visibility in hexdump.
-        // If you need durability guarantees, add an explicit "sync" command and flush in batches.
         n
     }
 }
