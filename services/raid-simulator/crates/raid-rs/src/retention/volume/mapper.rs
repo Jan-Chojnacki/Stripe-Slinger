@@ -12,12 +12,14 @@ pub fn geometry<const D: usize, const N: usize, S: Stripe<D, N>>() -> Geometry {
     }
 }
 
+#[allow(clippy::missing_const_for_fn)]
 pub fn locate_byte(byte_offset: u64, byte_delta: usize, geom: &Geometry) -> (u64, usize) {
     let absolute = byte_offset
         .checked_add(byte_delta as u64)
         .expect("byte offset overflow");
     let stripe = absolute / geom.bytes_per_stripe as u64;
-    let in_stripe = (absolute % geom.bytes_per_stripe as u64) as usize;
+    let in_stripe = usize::try_from(absolute % geom.bytes_per_stripe as u64)
+        .expect("stripe offset exceeds usize");
     (stripe, in_stripe)
 }
 

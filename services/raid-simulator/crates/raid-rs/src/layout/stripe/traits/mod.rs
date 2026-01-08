@@ -1,2 +1,2 @@
 pub(crate) mod restore;
-pub(crate) mod stripe;
+pub mod stripe;

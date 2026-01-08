@@ -14,8 +14,8 @@ fn open_prealloc_creates_and_sizes_file() {
     let path = tmp_path_str(&tf);
 
     let d = Disk::open_prealloc(&path, DISK_LEN).expect("open_prealloc");
-    assert_eq!(d.len, DISK_LEN, "disk length must match requested");
-    let meta = d.file.metadata().expect("metadata");
+    assert_eq!(d.len(), DISK_LEN, "disk length must match requested");
+    let meta = std::fs::metadata(&path).expect("metadata");
     assert_eq!(meta.len(), DISK_LEN, "backing file must be pre-sized");
 
     drop(d);

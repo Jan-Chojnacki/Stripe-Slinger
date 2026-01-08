@@ -5,7 +5,7 @@ use crate::layout::stripe::traits::stripe::Stripe;
 #[test]
 fn zero_initializes_all_drives() {
     let r = RAID0::<3, 4>::zero();
-    for drive in r.0.iter() {
+    for drive in &r.0 {
         assert_eq!(drive.as_bytes(), &[0u8; 4]);
     }
 }

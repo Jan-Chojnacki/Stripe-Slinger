@@ -12,14 +12,14 @@ fn restore_recovers_missing_drive_from_any_other() {
         let restorer: &mut dyn Restore = &mut r;
         restorer.restore(missing);
 
-        for drive in r.0.iter() {
+        for drive in &r.0 {
             assert_eq!(*drive, value);
         }
     }
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "RAID1 have 2 disks, 2 is not valid index.")]
 fn restore_panics_on_invalid_index() {
     let value = Bits::<2>([0xAA, 0x55]);
     let mut r = RAID1::<2, 2>([value; 2]);
@@ -30,7 +30,7 @@ fn restore_panics_on_invalid_index() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "RAID1 requires at least two drives to restore")]
 fn restore_panics_when_no_alternate_drive() {
     let value = Bits::<1>([1]);
     let mut r = RAID1::<1, 1>([value; 1]);

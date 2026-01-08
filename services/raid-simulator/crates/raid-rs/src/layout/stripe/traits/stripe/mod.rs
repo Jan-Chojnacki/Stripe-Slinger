@@ -15,4 +15,7 @@ pub trait Stripe<const D: usize, const N: usize> {
     fn as_restore(&self) -> Option<&dyn Restore> {
         None
     }
+    fn as_restore_mut(&mut self) -> Option<&mut dyn Restore> {
+        None
+    }
 }

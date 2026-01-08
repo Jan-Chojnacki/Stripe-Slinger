@@ -4,6 +4,7 @@ mod mapper_tests;
 #[cfg(test)]
 mod volume_tests;
 
+use anyhow::Result;
 use mapper::{Geometry, geometry, locate_byte, stripe_byte_offset};
 
 use crate::layout::bits::Bits;
@@ -23,6 +24,111 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             geom: geometry::<D, N, T>(),
             layout,
         }
+    }
+
+    pub fn disk_status_string(&self) -> String {
+        self.array.status_string()
+    }
+
+    pub fn fail_disk(&mut self, i: usize) -> Result<()> {
+        self.array.fail_disk(i)
+    }
+
+    pub fn replace_disk(&mut self, i: usize) -> Result<()> {
+        self.array.replace_disk(i)
+    }
+
+    pub fn any_needs_rebuild(&self) -> bool {
+        self.array
+            .0
+            .iter()
+            .any(|d| d.needs_rebuild && !d.is_missing())
+    }
+
+    pub fn logical_capacity_bytes(&self) -> u64 {
+        self.array.disk_len().saturating_mul(T::DATA as u64)
+    }
+
+    pub fn stripes_needed_for_logical_end(&self, logical_end: u64) -> u64 {
+        let bytes_per_stripe = (T::DATA as u64).saturating_mul(N as u64);
+        if bytes_per_stripe == 0 {
+            return 0;
+        }
+        let end = logical_end.min(self.logical_capacity_bytes());
+        if end == 0 {
+            return 0;
+        }
+        end.div_ceil(bytes_per_stripe)
+    }
+
+    pub fn repair_stripe(&mut self, stripe_index: u64) {
+        self.load_stripe(stripe_index);
+    }
+
+    pub fn clear_needs_rebuild_all(&mut self) {
+        for d in &mut self.array.0 {
+            if !d.is_missing() {
+                d.needs_rebuild = false;
+            }
+        }
+    }
+
+    pub fn clear_needs_rebuild_disk(&mut self, i: usize) {
+        if i < D && !self.array.0[i].is_missing() {
+            self.array.0[i].needs_rebuild = false;
+        }
+    }
+
+    pub fn rebuild(&mut self) {
+        let _ = self.rebuild_all();
+    }
+
+    pub fn rebuild_all_upto(&mut self, logical_end: u64) -> Result<()> {
+        if self.layout.as_restore().is_none() {
+            return Ok(());
+        }
+        if !self.any_needs_rebuild() {
+            return Ok(());
+        }
+
+        let stripes = self.stripes_needed_for_logical_end(logical_end);
+        for s in 0..stripes {
+            self.load_stripe(s);
+        }
+
+        self.clear_needs_rebuild_all();
+        Ok(())
+    }
+
+    pub fn rebuild_disk_upto(&mut self, i: usize, logical_end: u64) -> Result<()> {
+        if i >= D {
+            anyhow::bail!("disk index out of range: {i} (D={D})");
+        }
+        if self.layout.as_restore().is_none() {
+            return Ok(());
+        }
+        if self.array.0[i].is_missing() {
+            anyhow::bail!("disk {i} is missing/failed; replace it first");
+        }
+        if !self.array.0[i].needs_rebuild {
+            return Ok(());
+        }
+
+        let stripes = self.stripes_needed_for_logical_end(logical_end);
+        for s in 0..stripes {
+            self.load_stripe(s);
+        }
+
+        self.clear_needs_rebuild_disk(i);
+        Ok(())
+    }
+
+    pub fn rebuild_all(&mut self) -> Result<()> {
+        self.rebuild_all_upto(self.logical_capacity_bytes())
+    }
+
+    pub fn rebuild_disk(&mut self, i: usize) -> Result<()> {
+        self.rebuild_disk_upto(i, self.logical_capacity_bytes())
     }
 
     pub fn write_bytes(&mut self, byte_offset: u64, payload: &[u8]) {

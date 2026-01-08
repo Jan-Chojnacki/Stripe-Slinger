@@ -8,9 +8,9 @@ impl<const D: usize, const N: usize> Stripe<D, N> for DummyStripe<D, N> {
     const DATA: usize = 0;
     const DISKS: usize = 0;
     fn write(&mut self, _data: &[Bits<N>]) {}
-    fn write_raw(&mut self, data: &[Bits<N>]) {}
+    fn write_raw(&mut self, _data: &[Bits<N>]) {}
     fn read(&self, _out: &mut [Bits<N>]) {}
-    fn read_raw(&self, out: &mut [Bits<N>]) {}
+    fn read_raw(&self, _out: &mut [Bits<N>]) {}
 }
 
 #[test]
