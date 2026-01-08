@@ -2,16 +2,25 @@ services:
   init-sockets:
     image: alpine:3.20
     container_name: init-sockets
+    restart: "no"
     command:
       - sh
       - -c
       - |
         set -eu
+
         mkdir -p /sockets
         chown -R 65532:65532 /sockets
         chmod 0770 /sockets
+
+        mkdir -p /var/lib/dbus
+        if [ ! -s /var/lib/dbus/machine-id ]; then
+          cat /proc/sys/kernel/random/uuid | tr -d '-' > /var/lib/dbus/machine-id
+        fi
+        chmod 0444 /var/lib/dbus/machine-id
     volumes:
       - metrics-sockets:/sockets
+      - cadvisor-machine-id:/var/lib/dbus
 
   raid-simulator:
     build:
@@ -38,6 +47,7 @@ services:
       - METRICS_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
     volumes:
       - metrics-sockets:/sockets
+    restart: unless-stopped
 
   metrics-gateway:
     build:
@@ -55,27 +65,45 @@ services:
       - "8083:8080"
     volumes:
       - metrics-sockets:/sockets
+    restart: unless-stopped
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
+    depends_on:
+      - init-sockets
     privileged: true
     pid: host
     ports:
       - "8081:8080"
     volumes:
-      - /:/rootfs:ro
-      - /sys:/sys:ro
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /var/run:/var/run:rw
-      - /run/containerd:/run/containerd:rw
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+      - cadvisor-machine-id:/var/lib/dbus:ro
+
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - -logtostderr
-      - -docker_only=true
-      - -docker=unix:///var/run/docker.sock
-      - -containerd=/run/containerd/containerd.sock
-      - -containerd-namespace=moby
+      - >-
+        set -eu;
+        if [ -s /var/lib/dbus/machine-id ]; then
+          cat /var/lib/dbus/machine-id > /etc/machine-id;
+        else
+          cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id;
+        fi;
+        chmod 0444 /etc/machine-id || true;
+        exec /usr/bin/cadvisor
+          --port=8080
+          --prometheus_endpoint=/metrics
+          --docker=unix:///var/run/docker.sock
+          --docker_only=true
+          --containerd=
+          --podman=
+          --disable_root_cgroup_stats=true
+          --enable_metrics=cpu,memory,network,oom_event
+          --machine_id_file=/etc/machine-id,/var/lib/dbus/machine-id
+    restart: unless-stopped
 
   grafana-alloy:
     image: grafana/alloy:latest
@@ -97,6 +125,7 @@ services:
       - /etc/alloy/config.alloy
     ports:
       - "8082:12345"
+    restart: unless-stopped
 
 networks:
   default:
@@ -104,3 +133,4 @@ networks:
 
 volumes:
   metrics-sockets:
+  cadvisor-machine-id:
