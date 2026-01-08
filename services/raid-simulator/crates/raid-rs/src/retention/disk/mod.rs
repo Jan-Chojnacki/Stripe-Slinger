@@ -12,13 +12,11 @@ pub struct Disk {
     file: Option<File>,
     map: Option<MmapMut>,
     len: u64,
-    /// If true, the disk image exists but its contents are not trusted (e.g. newly created).
+
     pub needs_rebuild: bool,
 }
 
 impl Disk {
-    /// # Errors
-    /// Returns an error if the disk image cannot be created/opened or mapped.
     pub fn open_prealloc(path: &str, len: u64) -> anyhow::Result<Self> {
         let path = PathBuf::from(path);
         let existed = path.exists();
@@ -46,16 +44,7 @@ impl Disk {
         })
     }
 
-    /// Mark this disk as failed (hot-remove).
-    ///
-    /// This will:
-    /// - rename the underlying image to `*.failed.<ts>` (if it exists),
-    /// - drop the mmap + file handle so the array stops using it.
-    ///
-    /// # Errors
-    /// Returns an error if the disk image cannot be manipulated.
     pub fn fail(&mut self) -> anyhow::Result<()> {
-        // Rename first so it's visible on the host filesystem even while the file is open.
         if self.path.exists() {
             let ts = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -70,10 +59,6 @@ impl Disk {
         Ok(())
     }
 
-    /// Replace this disk with a fresh, empty image (hot-swap). Contents must be rebuilt by RAID.
-    ///
-    /// # Errors
-    /// Returns an error if the disk image cannot be recreated or mapped.
     pub fn replace(&mut self) -> anyhow::Result<()> {
         let file = std::fs::OpenOptions::new()
             .read(true)
@@ -112,7 +97,6 @@ impl Disk {
         self.len == 0
     }
 
-    /// Missing from the array's point of view (failed / removed / unlinked).
     #[must_use]
     pub fn is_missing(&self) -> bool {
         if !self.is_operational() {
@@ -161,7 +145,7 @@ impl Disk {
         let dst = &mut map[off..end];
         let n = dst.len();
         dst.copy_from_slice(&data[..n]);
-        // IMPORTANT:
+
         // Flushing every tiny write (our default chunk size is 4 bytes) makes startup rebuild and
         // read-repair extremely slow and can delay the FUSE mount from appearing.
         // This is a simulator; relying on the OS page cache is enough for visibility in hexdump.

@@ -37,8 +37,6 @@ impl Entry {
         buf
     }
 
-    /// # Panics
-    /// Panics if `buf` does not contain a full entry payload.
     #[must_use]
     pub fn from_bytes(buf: &[u8]) -> Self {
         let used = buf.first().copied().unwrap_or(0) == 1;

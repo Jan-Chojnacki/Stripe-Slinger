@@ -116,7 +116,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
 
             let end = state.header.next_free.max(Self::data_start());
 
-            // "<n>" => fail disk n (hot-remove)
             if let Ok(i) = cmd.parse::<usize>() {
                 if state.volume.fail_disk(i).is_err() {
                     reply.error(libc::EINVAL);
@@ -126,7 +125,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                 return;
             }
 
-            // "swap <n>" => fail + replace + rebuild
             if let Some(rest) = cmd.strip_prefix("swap") {
                 let rest = rest.trim();
                 if let Ok(i) = rest.parse::<usize>() {
@@ -144,7 +142,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                 }
             }
 
-            // "replace <n>" => replace + rebuild
             if let Some(rest) = cmd.strip_prefix("replace") {
                 let rest = rest.trim();
                 if let Ok(i) = rest.parse::<usize>() {
@@ -161,7 +158,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                 }
             }
 
-            // "rebuild <n>" => rebuild a disk that exists but is marked untrusted
             if let Some(rest) = cmd.strip_prefix("rebuild") {
                 let rest = rest.trim();
                 if let Ok(i) = rest.parse::<usize>() {

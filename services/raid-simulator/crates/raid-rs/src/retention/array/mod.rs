@@ -9,10 +9,6 @@ use std::fmt::Write;
 pub struct Array<const D: usize, const N: usize>(pub [Disk; D]);
 
 impl<const D: usize, const N: usize> Array<D, N> {
-    /// Creates an array with preallocated disk images.
-    ///
-    /// # Panics
-    /// Panics if any disk image cannot be created or opened.
     #[must_use]
     pub fn init_array(paths: &[String; D], len: u64) -> Self {
         let array: [Disk; D] =
@@ -26,8 +22,6 @@ impl<const D: usize, const N: usize> Array<D, N> {
         self.0.first().map_or(0, Disk::len)
     }
 
-    /// # Errors
-    /// Returns an error if the disk index is out of range or the disk cannot be failed.
     pub fn fail_disk(&mut self, i: usize) -> anyhow::Result<()> {
         if i >= D {
             anyhow::bail!("disk index out of range: {i} (D={D})");
@@ -35,8 +29,6 @@ impl<const D: usize, const N: usize> Array<D, N> {
         self.0[i].fail()
     }
 
-    /// # Errors
-    /// Returns an error if the disk index is out of range or the disk cannot be replaced.
     pub fn replace_disk(&mut self, i: usize) -> anyhow::Result<()> {
         if i >= D {
             anyhow::bail!("disk index out of range: {i} (D={D})");
@@ -79,7 +71,6 @@ impl<const D: usize, const N: usize> Array<D, N> {
     pub fn read<T: Stripe<D, N>>(&mut self, off: u64, stripe: &mut T) {
         let mut data_buf: [Bits<N>; D] = [Bits::zero(); D];
 
-        // Collect indices that are missing OR present-but-untrusted (needs rebuild).
         let mut missing_or_untrusted: Vec<usize> = Vec::new();
 
         for (i, (disk, data)) in self.0.iter_mut().zip(data_buf.iter_mut()).enumerate() {
@@ -95,13 +86,9 @@ impl<const D: usize, const N: usize> Array<D, N> {
 
         stripe.write_raw(&data_buf);
 
-        // Attempt restore when the layout supports it.
         let mut repaired_indices: Vec<usize> = Vec::new();
 
         if let Some(restorer) = stripe.as_restore_mut() {
-            // Heuristic mode detection:
-            // - RAID1-like: DATA == 1 (mirroring) -> can restore multiple disks.
-            // - RAID3-like: DATA + 1 == DISKS (single parity) -> can restore only one missing.
             let raid1_like = T::DATA == 1 && T::DISKS == D;
             let raid3_like = T::DATA + 1 == T::DISKS && T::DISKS == D;
 
@@ -117,7 +104,6 @@ impl<const D: usize, const N: usize> Array<D, N> {
                     repaired_indices.push(i);
                 }
             } else {
-                // Unknown redundancy pattern: only try single-disk restore.
                 if missing_or_untrusted.len() == 1 {
                     let i = missing_or_untrusted[0];
                     restorer.restore(i);
@@ -125,15 +111,10 @@ impl<const D: usize, const N: usize> Array<D, N> {
                 }
             }
 
-            // Scrub for inconsistencies (e.g. RAID1 mismatch or RAID3 parity mismatch).
             let scrub_rewrite = restorer.scrub();
             repaired_indices.extend(scrub_rewrite);
         }
 
-        // Write-back repaired stripes (read-repair): if a disk is present (operational)
-        // and either:
-        // - it was "untrusted" (needs rebuild) and we reconstructed it,
-        // - or scrub marked it for rewrite.
         if !repaired_indices.is_empty() {
             repaired_indices.sort_unstable();
             repaired_indices.dedup();
@@ -148,7 +129,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
                 if self.0[i].is_missing() {
                     continue;
                 }
-                // Write back repaired stripes to present disks.
+
                 self.0[i].write_at(off, &raw[i].0);
             }
         }

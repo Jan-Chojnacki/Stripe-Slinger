@@ -62,10 +62,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _flags: Option<u32>,
         reply: ReplyAttr,
     ) {
-        // Allow shells to use redirections like `echo 2 > .raidctl`.
-        // Such redirections typically open with O_TRUNC which triggers setattr(size=0)
-        // *before* write(). We treat the control file as a virtual file: we accept
-        // truncation/size changes without affecting anything and simply return its attrs.
         if ino == CTL_INO {
             reply.attr(&TTL, &self.ctl_attr());
             return;

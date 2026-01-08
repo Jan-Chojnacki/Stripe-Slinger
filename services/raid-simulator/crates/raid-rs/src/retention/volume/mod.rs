@@ -30,19 +30,14 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.array.status_string()
     }
 
-    /// # Errors
-    /// Returns an error if the disk index is out of range or the disk cannot be failed.
     pub fn fail_disk(&mut self, i: usize) -> Result<()> {
         self.array.fail_disk(i)
     }
 
-    /// # Errors
-    /// Returns an error if the disk index is out of range or the disk cannot be replaced.
     pub fn replace_disk(&mut self, i: usize) -> Result<()> {
         self.array.replace_disk(i)
     }
 
-    /// Returns true if at least one disk image is present but marked as `needs_rebuild`.
     pub fn any_needs_rebuild(&self) -> bool {
         self.array
             .0
@@ -50,15 +45,10 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             .any(|d| d.needs_rebuild && !d.is_missing())
     }
 
-    /// Logical capacity of this volume in bytes (data-only address space).
     pub fn logical_capacity_bytes(&self) -> u64 {
         self.array.disk_len().saturating_mul(T::DATA as u64)
     }
 
-    /// How many stripe indices are needed to cover logical bytes in the range [0, `logical_end`).
-    ///
-    /// This is used to rebuild only the "used" portion of the logical address space instead of
-    /// scanning the entire disk image, which can be very slow for large images with small `N`.
     pub fn stripes_needed_for_logical_end(&self, logical_end: u64) -> u64 {
         let bytes_per_stripe = (T::DATA as u64).saturating_mul(N as u64);
         if bytes_per_stripe == 0 {
@@ -71,12 +61,10 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         end.div_ceil(bytes_per_stripe)
     }
 
-    /// Force a read of a given stripe index (triggers read-repair writeback in `Array::read()`).
     pub fn repair_stripe(&mut self, stripe_index: u64) {
         self.load_stripe(stripe_index);
     }
 
-    /// Mark all present disks as trusted (clear `needs_rebuild`).
     pub fn clear_needs_rebuild_all(&mut self) {
         for d in &mut self.array.0 {
             if !d.is_missing() {
@@ -85,24 +73,16 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         }
     }
 
-    /// Mark a single disk as trusted (clear `needs_rebuild`).
     pub fn clear_needs_rebuild_disk(&mut self, i: usize) {
         if i < D && !self.array.0[i].is_missing() {
             self.array.0[i].needs_rebuild = false;
         }
     }
 
-    /// Backwards-compatible alias kept for older call sites.
-    ///
-    /// Runs a full scan and triggers read-repair write-back for any disks marked as `needs_rebuild`.
-    ///
-    /// Prefer calling [`Self::rebuild_all`] (which returns a `Result`) in new code.
     pub fn rebuild(&mut self) {
         let _ = self.rebuild_all();
     }
 
-    /// Rebuild all disks that are present but marked as `needs_rebuild`, up to a logical byte offset.
-    ///
     /// This scans only the requested logical prefix (typically: filesystem metadata + used data),
     /// relying on `Array::read()` read-repair writeback to populate missing/untrusted chunks.
     ///

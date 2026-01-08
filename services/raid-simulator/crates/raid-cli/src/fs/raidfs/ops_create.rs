@@ -26,8 +26,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             return;
         }
 
-        // Be permissive: some shells/open patterns may include O_CREAT even for an existing file.
-        // The control file is virtual and always exists at the root.
         if name == OsStr::new(CTL_NAME) {
             let attr = self.ctl_attr();
             reply.created(&TTL, &attr, 0, CTL_INO, OPEN_DIRECT_IO);

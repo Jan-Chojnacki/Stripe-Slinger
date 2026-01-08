@@ -12,7 +12,6 @@ impl<const D: usize, const N: usize> Restore for RAID3<D, N> {
     }
 
     fn scrub(&mut self) -> Vec<usize> {
-        // Validate parity against data disks. If parity is wrong, recompute and mark it for rewrite.
         let mut p = Bits::<N>::zero();
         for i in 0..Self::PARITY_IDX {
             p ^= self.0[i];

@@ -73,8 +73,6 @@ where
             *entry = Entry::empty();
         }
 
-        // Brand-new array: we just wrote consistent metadata to *all* disks.
-        // Mark them trusted so we don't block the first mount doing pointless rebuild/read-repair.
         volume.clear_needs_rebuild_all();
     }
 
@@ -84,11 +82,9 @@ where
         entries,
     }));
 
-    // Kick off an eager rebuild in the background (used prefix only), so mount happens immediately.
-    // This avoids long startup times for large images with small chunk sizes.
     {
         let state_clone = state.clone();
-        // Rebuild at least metadata, and at most the used end (next_free).
+
         let rebuild_end = state_clone.lock().map_or_else(
             |_| RaidFs::<D, N, T>::data_start(),
             |st| st.header.next_free.max(RaidFs::<D, N, T>::data_start()),

@@ -13,8 +13,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _lock_owner: u64,
         reply: ReplyEmpty,
     ) {
-        // Some tools (including `cat`) report errors if flush/close fails.
-        // Our control file is virtual, so flush should always succeed.
         if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
             reply.ok();
         } else {
@@ -32,7 +30,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _flush: bool,
         reply: ReplyEmpty,
     ) {
-        // Release/close should never error for the virtual control file.
         if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
             reply.ok();
         } else {
@@ -47,7 +44,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _datasync: bool,
         reply: ReplyEmpty,
     ) {
-        // No-op for this in-memory/fs-on-raid model; keep tools happy.
         if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
             reply.ok();
         } else {
