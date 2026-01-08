@@ -9,6 +9,7 @@ mod stripe_trait_tests;
 pub struct RAID0<const D: usize, const N: usize>(pub [Bits<N>; D]);
 
 impl<const D: usize, const N: usize> RAID0<D, N> {
+    #[must_use]
     pub const fn zero() -> Self {
         Self([Bits::<N>::zero(); D])
     }

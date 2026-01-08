@@ -12,11 +12,11 @@ use crate::fs::metadata::Header;
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
-    fn file_attr(&self, ino: u64, size: u64) -> FileAttr {
+    fn file_attr(ino: u64, size: u64) -> FileAttr {
         FileAttr {
             ino,
             size,
-            blocks: (size + 511) / 512,
+            blocks: size.div_ceil(512),
             atime: SystemTime::UNIX_EPOCH,
             mtime: SystemTime::UNIX_EPOCH,
             ctime: SystemTime::UNIX_EPOCH,
@@ -32,24 +32,29 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
     }
 
-    pub(crate) fn ctl_attr(&self) -> FileAttr {
-        self.file_attr(CTL_INO, CTL_SIZE)
+    #[must_use]
+    pub fn ctl_attr(&self) -> FileAttr {
+        Self::file_attr(CTL_INO, CTL_SIZE)
     }
 
-    pub(crate) fn data_start() -> u64 {
+    #[must_use]
+    pub const fn data_start() -> u64 {
         TABLE_SIZE as u64
     }
 
-    pub(crate) fn header_bytes(header: &Header) -> [u8; HEADER_SIZE] {
+    #[must_use]
+    pub fn header_bytes(header: &Header) -> [u8; HEADER_SIZE] {
         let mut buf = [0u8; HEADER_SIZE];
         buf[0..8].copy_from_slice(&MAGIC);
         buf[8] = VERSION;
         buf[16..24].copy_from_slice(&header.next_free.to_le_bytes());
-        buf[24..28].copy_from_slice(&(MAX_FILES as u32).to_le_bytes());
+        let max_files = u32::try_from(MAX_FILES).unwrap_or(u32::MAX);
+        buf[24..28].copy_from_slice(&max_files.to_le_bytes());
         buf
     }
 
-    pub(crate) fn parse_header(buf: &[u8]) -> Option<Header> {
+    #[must_use]
+    pub fn parse_header(buf: &[u8]) -> Option<Header> {
         if buf.len() < HEADER_SIZE {
             return None;
         }
@@ -67,31 +72,39 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         Some(Header { next_free })
     }
 
-    pub(crate) fn inode_for(index: usize) -> u64 {
+    #[must_use]
+    pub const fn inode_for(index: usize) -> u64 {
         FILE_ID_BASE + index as u64
     }
 
-    pub(crate) fn index_for_inode(ino: u64) -> Option<usize> {
+    #[allow(clippy::missing_const_for_fn)]
+    #[must_use]
+    pub fn index_for_inode(ino: u64) -> Option<usize> {
         if ino < FILE_ID_BASE {
             None
         } else {
-            let idx = (ino - FILE_ID_BASE) as usize;
+            let Ok(idx) = usize::try_from(ino - FILE_ID_BASE) else {
+                return None;
+            };
             if idx < MAX_FILES { Some(idx) } else { None }
         }
     }
 
-    pub(crate) fn is_valid_name(name: &OsStr) -> bool {
+    #[must_use]
+    pub fn is_valid_name(name: &OsStr) -> bool {
         if name.is_empty() || name == OsStr::new(".") || name == OsStr::new("..") {
             return false;
         }
         !name.to_string_lossy().contains('/')
     }
 
-    pub(crate) fn entry_attr(&self, index: usize, size: u64) -> FileAttr {
-        self.file_attr(Self::inode_for(index), size)
+    #[must_use]
+    pub fn entry_attr(&self, index: usize, size: u64) -> FileAttr {
+        Self::file_attr(Self::inode_for(index), size)
     }
 
-    pub(crate) fn root_attr(&self) -> FileAttr {
+    #[must_use]
+    pub fn root_attr(&self) -> FileAttr {
         FileAttr {
             ino: ROOT_ID,
             size: 0,

@@ -3,15 +3,16 @@ use std::ffi::OsStr;
 use fuser::{ReplyCreate, ReplyEmpty, ReplyEntry, Request};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::*;
+use crate::fs::constants::{CTL_INO, CTL_NAME, NAME_LEN, OPEN_DIRECT_IO, ROOT_ID, TTL};
 use crate::fs::metadata::Entry;
 use crate::fs::persist::save_header_and_entry;
 
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn op_create(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         parent: u64,
         name: &OsStr,
@@ -73,14 +74,15 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         };
         state.entries[index] = entry;
         state.header.next_free = new_end;
-        let _ = save_header_and_entry(&mut state, index);
+        save_header_and_entry(&mut state, index);
 
         let attr = self.entry_attr(index, 0);
         reply.created(&TTL, &attr, 0, Self::inode_for(index), OPEN_DIRECT_IO);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn op_mknod(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         parent: u64,
         name: &OsStr,
@@ -134,14 +136,14 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         };
         state.entries[index] = entry;
         state.header.next_free = new_end;
-        let _ = save_header_and_entry(&mut state, index);
+        save_header_and_entry(&mut state, index);
 
         let attr = self.entry_attr(index, 0);
         reply.entry(&TTL, &attr, 0);
     }
 
     pub(crate) fn op_unlink(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         parent: u64,
         name: &OsStr,
@@ -164,7 +166,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             .find(|(_, entry)| entry.used && entry.name == name.to_string_lossy())
         {
             state.entries[index] = Entry::empty();
-            let _ = save_header_and_entry(&mut state, index);
+            save_header_and_entry(&mut state, index);
             reply.ok();
         } else {
             reply.error(libc::ENOENT);

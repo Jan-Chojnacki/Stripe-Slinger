@@ -1,13 +1,12 @@
 use fuser::{ReplyEmpty, Request};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::*;
+use crate::fs::constants::CTL_INO;
 
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     pub(crate) fn op_flush(
-        &mut self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,
@@ -16,17 +15,15 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     ) {
         // Some tools (including `cat`) report errors if flush/close fails.
         // Our control file is virtual, so flush should always succeed.
-        if ino == CTL_INO {
-            reply.ok();
-        } else if Self::index_for_inode(ino).is_some() {
+        if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
             reply.ok();
         } else {
             reply.error(libc::ENOENT);
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn op_release(
-        &mut self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,
@@ -36,9 +33,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         reply: ReplyEmpty,
     ) {
         // Release/close should never error for the virtual control file.
-        if ino == CTL_INO {
-            reply.ok();
-        } else if Self::index_for_inode(ino).is_some() {
+        if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
             reply.ok();
         } else {
             reply.error(libc::ENOENT);
@@ -46,7 +41,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     pub(crate) fn op_fsync(
-        &mut self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,

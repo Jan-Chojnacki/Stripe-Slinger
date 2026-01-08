@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 
 mod cli;
-mod fs;
+pub mod fs;
 mod mount;
 
 use cli::{Cli, Command, RaidMode};

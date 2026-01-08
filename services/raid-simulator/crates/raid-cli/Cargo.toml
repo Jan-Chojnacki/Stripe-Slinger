@@ -2,6 +2,12 @@
 name = "raid-cli"
 version = "0.1.0"
 edition = "2024"
+description = "Command-line RAID simulator"
+license = "MIT"
+repository = "https://github.com/Stripe-Slinger/Stripe-Slinger"
+readme = "README.md"
+keywords = ["raid", "storage", "cli", "simulator"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.100"

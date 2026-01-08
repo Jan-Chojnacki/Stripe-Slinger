@@ -36,7 +36,7 @@ where
     std::fs::create_dir_all(mount_point)
         .with_context(|| format!("failed to create mount point {}", mount_point.display()))?;
     let paths = disk_paths::<D>(disk_dir)?;
-    let array = Array::<D, N>::init_array(paths, disk_size);
+    let array = Array::<D, N>::init_array(&paths, disk_size);
     let capacity = array.disk_len().saturating_mul(T::DATA as u64);
     if capacity < RaidFs::<D, N, T>::data_start() + 1 {
         return Err(anyhow::anyhow!(
@@ -46,29 +46,31 @@ where
     let mut volume = Volume::new(array, layout);
     let mut header_buf = [0u8; HEADER_SIZE];
     volume.read_bytes(0, &mut header_buf);
-    let mut header = RaidFs::<D, N, T>::parse_header(&header_buf).unwrap_or(Header {
+    let parsed_header = RaidFs::<D, N, T>::parse_header(&header_buf);
+    let is_new_header = parsed_header.is_none();
+    let mut header = parsed_header.unwrap_or_else(|| Header {
         next_free: RaidFs::<D, N, T>::data_start(),
     });
     if header.next_free < RaidFs::<D, N, T>::data_start() {
         header.next_free = RaidFs::<D, N, T>::data_start();
     }
 
-    let mut entries = Vec::with_capacity(MAX_FILES);
-    for i in 0..MAX_FILES {
+    let mut entries = vec![Entry::empty(); MAX_FILES];
+    for (i, entry) in entries.iter_mut().enumerate().take(MAX_FILES) {
         let mut buf = [0u8; ENTRY_SIZE];
         let entry_offset = HEADER_SIZE as u64 + (i as u64 * ENTRY_SIZE as u64);
         volume.read_bytes(entry_offset, &mut buf);
-        entries.push(Entry::from_bytes(&buf));
+        *entry = Entry::from_bytes(&buf);
     }
 
-    if RaidFs::<D, N, T>::parse_header(&header_buf).is_none() {
+    if is_new_header {
         let header_bytes = RaidFs::<D, N, T>::header_bytes(&header);
         volume.write_bytes(0, &header_bytes);
-        for i in 0..MAX_FILES {
+        for (i, entry) in entries.iter_mut().enumerate().take(MAX_FILES) {
             let entry_offset = HEADER_SIZE as u64 + (i as u64 * ENTRY_SIZE as u64);
             let empty = Entry::empty().to_bytes();
             volume.write_bytes(entry_offset, &empty);
-            entries[i] = Entry::empty();
+            *entry = Entry::empty();
         }
 
         // Brand-new array: we just wrote consistent metadata to *all* disks.
@@ -87,10 +89,10 @@ where
     {
         let state_clone = state.clone();
         // Rebuild at least metadata, and at most the used end (next_free).
-        let rebuild_end = match state_clone.lock() {
-            Ok(st) => st.header.next_free.max(RaidFs::<D, N, T>::data_start()),
-            Err(_) => RaidFs::<D, N, T>::data_start(),
-        };
+        let rebuild_end = state_clone.lock().map_or_else(
+            |_| RaidFs::<D, N, T>::data_start(),
+            |st| st.header.next_free.max(RaidFs::<D, N, T>::data_start()),
+        );
 
         std::thread::spawn(move || {
             let stripes = {
@@ -127,7 +129,7 @@ where
         .with_context(|| format!("failed to mount filesystem at {}", mount_point.display()))
 }
 
-pub(crate) fn run_fuse<const D: usize, const N: usize>(
+pub fn run_fuse<const D: usize, const N: usize>(
     mode: RaidMode,
     mount_point: &Path,
     disk_dir: &Path,

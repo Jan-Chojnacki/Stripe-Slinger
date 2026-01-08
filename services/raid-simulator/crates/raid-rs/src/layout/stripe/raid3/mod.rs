@@ -14,6 +14,7 @@ pub struct RAID3<const D: usize, const N: usize>(pub [Bits<N>; D]);
 impl<const D: usize, const N: usize> RAID3<D, N> {
     const PARITY_IDX: usize = D - 1;
 
+    #[must_use]
     pub const fn zero() -> Self {
         Self([Bits::<N>::zero(); D])
     }
@@ -27,7 +28,7 @@ impl<const D: usize, const N: usize> RAID3<D, N> {
     }
 
     fn reconstruct_data(&mut self, i: usize) {
-        assert!(i < D, "RAID3 have {} disks, {} is not valid index.", D, i);
+        assert!(i < D, "RAID3 have {D} disks, {i} is not valid index.");
         let mut acc = self.0[Self::PARITY_IDX];
         for j in 0..Self::PARITY_IDX {
             if j != i {

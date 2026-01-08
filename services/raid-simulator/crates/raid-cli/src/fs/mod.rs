@@ -1,8 +1,8 @@
-pub(crate) mod constants;
-pub(crate) mod metadata;
-pub(crate) mod persist;
-pub(crate) mod raidfs;
+pub mod constants;
+pub mod metadata;
+pub mod persist;
+pub mod raidfs;
 
-pub(crate) use constants::*;
-pub(crate) use metadata::{Entry, Header};
-pub(crate) use raidfs::{FsState, RaidFs};
+pub use constants::*;
+pub use metadata::{Entry, Header};
+pub use raidfs::{FsState, RaidFs};

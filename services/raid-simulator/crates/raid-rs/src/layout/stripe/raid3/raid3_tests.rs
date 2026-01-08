@@ -5,7 +5,7 @@ use crate::layout::stripe::raid3::RAID3;
 fn zero_initializes_all_drives() {
     let r = RAID3::<3, 4>::zero();
     for d in 0..3 {
-        assert_eq!(r.0[d].as_bytes(), &[0u8; 4], "drive {}", d);
+        assert_eq!(r.0[d].as_bytes(), &[0u8; 4], "drive {d}");
     }
     assert_eq!(RAID3::<3, 4>::PARITY_IDX, 2);
 }
@@ -28,7 +28,7 @@ fn write_parity_basic_and_idempotent() {
     assert_eq!(r.0[RAID3::<3, 4>::PARITY_IDX], before);
 
     let mut acc = Bits::<4>::zero();
-    for b in r.0.iter() {
+    for b in &r.0 {
         acc ^= *b;
     }
     assert_eq!(acc.as_bytes(), &[0u8; 4]);
@@ -48,8 +48,8 @@ fn reconstruct_in_place_recovers_original() {
         r.0[i] = Bits::zero();
         r.reconstruct_data(i);
 
-        for j in 0..RAID3::<4, 4>::PARITY_IDX {
-            assert_eq!(r.0[j], expected[j]);
+        for (j, expected_chunk) in expected.iter().enumerate().take(RAID3::<4, 4>::PARITY_IDX) {
+            assert_eq!(r.0[j], *expected_chunk);
         }
     }
 }

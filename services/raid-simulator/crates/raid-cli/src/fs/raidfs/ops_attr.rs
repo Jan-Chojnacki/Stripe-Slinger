@@ -3,14 +3,14 @@ use std::time::SystemTime;
 use fuser::{ReplyAttr, Request, TimeOrNow};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::*;
+use crate::fs::constants::{CTL_INO, ROOT_ID, TTL};
 use crate::fs::persist::save_header_and_entry;
 
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     pub(crate) fn op_getattr(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         ino: u64,
         _fh: Option<u64>,
@@ -43,8 +43,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn op_setattr(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         ino: u64,
         _mode: Option<u32>,
@@ -102,7 +103,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             if let Some(entry) = state.entries.get_mut(index) {
                 entry.size = new_size;
             }
-            let _ = save_header_and_entry(&mut state, index);
+            save_header_and_entry(&mut state, index);
         }
 
         reply.attr(&TTL, &self.entry_attr(index, entry_size));

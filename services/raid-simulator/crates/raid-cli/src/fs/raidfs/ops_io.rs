@@ -1,13 +1,13 @@
 use fuser::{ReplyData, ReplyOpen, ReplyWrite, Request};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::*;
+use crate::fs::constants::{CTL_INO, OPEN_DIRECT_IO};
 use crate::fs::persist::save_header_and_entry;
 
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
-    pub(crate) fn op_open(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
+    pub(crate) fn op_open(&self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
         if ino == CTL_INO {
             reply.opened(CTL_INO, OPEN_DIRECT_IO);
             return;
@@ -27,8 +27,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn op_read(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,
@@ -53,7 +54,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             txt.push_str(&state.volume.disk_status_string());
 
             let bytes = txt.as_bytes();
-            let off = offset.max(0) as usize;
+            let off = usize::try_from(offset.max(0)).unwrap_or(0);
             let end = (off + size as usize).min(bytes.len());
             if off >= bytes.len() {
                 reply.data(&[]);
@@ -68,7 +69,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             return;
         };
 
-        let offset = offset.max(0) as u64;
+        let offset = u64::try_from(offset.max(0)).unwrap_or(0);
         let Ok(mut state) = self.state.lock() else {
             reply.error(libc::EIO);
             return;
@@ -85,15 +86,16 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
 
         let available = file_size - offset;
-        let to_read = (size as u64).min(available) as usize;
+        let to_read = usize::try_from(u64::from(size).min(available)).unwrap_or(0);
         let mut buf = vec![0u8; to_read];
         let abs_offset = file_offset + offset;
         state.volume.read_bytes(abs_offset, &mut buf);
         reply.data(&buf);
     }
 
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     pub(crate) fn op_write(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,
@@ -112,7 +114,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                 return;
             };
 
-            let end = state.header.next_free.max(RaidFs::<D, N, T>::data_start());
+            let end = state.header.next_free.max(Self::data_start());
 
             // "<n>" => fail disk n (hot-remove)
             if let Ok(i) = cmd.parse::<usize>() {
@@ -120,7 +122,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                     reply.error(libc::EINVAL);
                     return;
                 }
-                reply.written(data.len() as u32);
+                reply.written(Self::write_len(data.len()));
                 return;
             }
 
@@ -137,7 +139,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         reply.error(libc::EIO);
                         return;
                     }
-                    reply.written(data.len() as u32);
+                    reply.written(Self::write_len(data.len()));
                     return;
                 }
             }
@@ -154,7 +156,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         reply.error(libc::EIO);
                         return;
                     }
-                    reply.written(data.len() as u32);
+                    reply.written(Self::write_len(data.len()));
                     return;
                 }
             }
@@ -167,7 +169,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         reply.error(libc::EIO);
                         return;
                     }
-                    reply.written(data.len() as u32);
+                    reply.written(Self::write_len(data.len()));
                     return;
                 }
             }
@@ -181,7 +183,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             return;
         };
 
-        let offset = offset.max(0) as u64;
+        let offset = u64::try_from(offset.max(0)).unwrap_or(0);
         let Ok(mut state) = self.state.lock() else {
             reply.error(libc::EIO);
             return;
@@ -207,7 +209,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
 
         if offset > entry_size {
-            let gap = (offset - entry_size) as usize;
+            let gap = usize::try_from(offset - entry_size).unwrap_or(0);
             if gap > 0 {
                 let zeros = vec![0u8; gap];
                 let gap_offset = entry_offset + entry_size;
@@ -223,7 +225,11 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         if is_last {
             state.header.next_free = new_end;
         }
-        let _ = save_header_and_entry(&mut state, index);
-        reply.written(data.len() as u32);
+        save_header_and_entry(&mut state, index);
+        reply.written(Self::write_len(data.len()));
+    }
+
+    fn write_len(len: usize) -> u32 {
+        u32::try_from(len).unwrap_or(u32::MAX)
     }
 }

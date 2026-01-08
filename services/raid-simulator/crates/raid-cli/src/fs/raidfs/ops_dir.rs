@@ -3,13 +3,13 @@ use std::ffi::OsStr;
 use fuser::{FileType, ReplyDirectory, ReplyEntry, Request};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::*;
+use crate::fs::constants::{CTL_INO, CTL_NAME, ROOT_ID, TTL};
 
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     pub(crate) fn op_lookup(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         parent: u64,
         name: &OsStr,
@@ -43,7 +43,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     pub(crate) fn op_readdir(
-        &mut self,
+        &self,
         _req: &Request<'_>,
         ino: u64,
         _fh: u64,
@@ -74,8 +74,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             }
         }
 
-        for (i, (inode, kind, name)) in entries.into_iter().enumerate().skip(offset as usize) {
-            let next_offset = (i + 1) as i64;
+        let offset = usize::try_from(offset).unwrap_or(0);
+        for (i, (inode, kind, name)) in entries.into_iter().enumerate().skip(offset) {
+            let next_offset = i64::try_from(i + 1).unwrap_or(i64::MAX);
             if reply.add(inode, next_offset, kind, name.as_str()) {
                 break;
             }

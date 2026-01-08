@@ -6,13 +6,13 @@ use crate::fs::DEFAULT_DISK_LEN;
 
 #[derive(Parser)]
 #[command(author, version, about)]
-pub(crate) struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    pub(crate) command: Command,
+    pub command: Command,
 }
 
 #[derive(Subcommand)]
-pub(crate) enum Command {
+pub enum Command {
     Fuse {
         #[arg(long)]
         mount_point: PathBuf,
@@ -28,7 +28,7 @@ pub(crate) enum Command {
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
-pub(crate) enum RaidMode {
+pub enum RaidMode {
     Raid0,
     Raid1,
     Raid3,

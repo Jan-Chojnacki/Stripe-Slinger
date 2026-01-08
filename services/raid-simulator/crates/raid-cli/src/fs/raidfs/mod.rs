@@ -7,4 +7,4 @@ mod ops_io;
 mod ops_sync;
 mod types;
 
-pub(crate) use types::{FsState, RaidFs};
+pub use types::{FsState, RaidFs};

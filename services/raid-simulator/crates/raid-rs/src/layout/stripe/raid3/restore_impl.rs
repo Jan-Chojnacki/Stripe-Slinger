@@ -17,11 +17,11 @@ impl<const D: usize, const N: usize> Restore for RAID3<D, N> {
         for i in 0..Self::PARITY_IDX {
             p ^= self.0[i];
         }
-        if self.0[Self::PARITY_IDX] != p {
+        if self.0[Self::PARITY_IDX] == p {
+            Vec::new()
+        } else {
             self.0[Self::PARITY_IDX] = p;
             vec![Self::PARITY_IDX]
-        } else {
-            Vec::new()
         }
     }
 }

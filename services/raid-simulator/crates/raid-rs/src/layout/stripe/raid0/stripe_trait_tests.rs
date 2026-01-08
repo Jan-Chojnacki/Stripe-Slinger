@@ -41,14 +41,14 @@ fn stripe_write_raw_and_read_raw_cover_all_drives() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "RAID0 expects 2 chunks.")]
 fn stripe_write_panics_on_wrong_len() {
     let mut r = RAID0::<2, 2>::zero();
     r.write(&[Bits::<2>::zero()]);
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "RAID0 expects 2 chunks.")]
 fn stripe_write_raw_panics_on_wrong_len() {
     let mut r = RAID0::<2, 2>::zero();
     let values = [Bits::<2>::zero(); <RAID0<2, 2> as Stripe<2, 2>>::DISKS];
@@ -56,7 +56,7 @@ fn stripe_write_raw_panics_on_wrong_len() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "Output buffer must be 2 chunks.")]
 fn stripe_read_panics_on_wrong_out_len() {
     let values = [Bits::<1>([1]), Bits::<1>([2])];
     let mut r = RAID0::<2, 1>::zero();
@@ -67,7 +67,7 @@ fn stripe_read_panics_on_wrong_out_len() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "Output buffer must be 3 chunks.")]
 fn stripe_read_raw_panics_on_wrong_out_len() {
     let values = [Bits::<1>([1]), Bits::<1>([2]), Bits::<1>([3])];
     let mut r = RAID0::<3, 1>::zero();

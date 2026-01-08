@@ -17,6 +17,8 @@ pub struct Disk {
 }
 
 impl Disk {
+    /// # Errors
+    /// Returns an error if the disk image cannot be created/opened or mapped.
     pub fn open_prealloc(path: &str, len: u64) -> anyhow::Result<Self> {
         let path = PathBuf::from(path);
         let existed = path.exists();
@@ -31,7 +33,9 @@ impl Disk {
         let prev_len = file.metadata().map(|m| m.len()).unwrap_or(0);
         file.set_len(len)?;
 
-        let map = unsafe { MmapOptions::new().len(len as usize).map_mut(&file)? };
+        let map_len = usize::try_from(len)
+            .map_err(|_| anyhow::anyhow!("disk length {len} exceeds addressable size"))?;
+        let map = unsafe { MmapOptions::new().len(map_len).map_mut(&file)? };
 
         Ok(Self {
             path,
@@ -47,6 +51,9 @@ impl Disk {
     /// This will:
     /// - rename the underlying image to `*.failed.<ts>` (if it exists),
     /// - drop the mmap + file handle so the array stops using it.
+    ///
+    /// # Errors
+    /// Returns an error if the disk image cannot be manipulated.
     pub fn fail(&mut self) -> anyhow::Result<()> {
         // Rename first so it's visible on the host filesystem even while the file is open.
         if self.path.exists() {
@@ -64,6 +71,9 @@ impl Disk {
     }
 
     /// Replace this disk with a fresh, empty image (hot-swap). Contents must be rebuilt by RAID.
+    ///
+    /// # Errors
+    /// Returns an error if the disk image cannot be recreated or mapped.
     pub fn replace(&mut self) -> anyhow::Result<()> {
         let file = std::fs::OpenOptions::new()
             .read(true)
@@ -72,7 +82,9 @@ impl Disk {
             .truncate(true)
             .open(&self.path)?;
         file.set_len(self.len)?;
-        let map = unsafe { MmapOptions::new().len(self.len as usize).map_mut(&file)? };
+        let map_len = usize::try_from(self.len)
+            .map_err(|_| anyhow::anyhow!("disk length {} exceeds addressable size", self.len))?;
+        let map = unsafe { MmapOptions::new().len(map_len).map_mut(&file)? };
 
         self.file = Some(file);
         self.map = Some(map);
@@ -80,19 +92,28 @@ impl Disk {
         Ok(())
     }
 
+    #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
     }
 
-    pub fn len(&self) -> u64 {
+    #[must_use]
+    pub const fn len(&self) -> u64 {
         self.len
     }
 
-    pub fn is_operational(&self) -> bool {
+    #[must_use]
+    pub const fn is_operational(&self) -> bool {
         self.file.is_some() && self.map.is_some()
     }
 
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     /// Missing from the array's point of view (failed / removed / unlinked).
+    #[must_use]
     pub fn is_missing(&self) -> bool {
         if !self.is_operational() {
             return true;
@@ -107,10 +128,17 @@ impl Disk {
         let Some(map) = self.map.as_ref() else {
             return 0;
         };
-        let end = (off as usize)
-            .saturating_add(buf.len())
-            .min(self.len as usize);
-        let src = &map[off as usize..end];
+        let Ok(off) = usize::try_from(off) else {
+            return 0;
+        };
+        let Ok(disk_len) = usize::try_from(self.len) else {
+            return 0;
+        };
+        if off >= disk_len {
+            return 0;
+        }
+        let end = off.saturating_add(buf.len()).min(disk_len);
+        let src = &map[off..end];
         let n = src.len();
         buf[..n].copy_from_slice(src);
         n
@@ -120,10 +148,17 @@ impl Disk {
         let Some(map) = self.map.as_mut() else {
             return 0;
         };
-        let end = (off as usize)
-            .saturating_add(data.len())
-            .min(self.len as usize);
-        let dst = &mut map[off as usize..end];
+        let Ok(off) = usize::try_from(off) else {
+            return 0;
+        };
+        let Ok(disk_len) = usize::try_from(self.len) else {
+            return 0;
+        };
+        if off >= disk_len {
+            return 0;
+        }
+        let end = off.saturating_add(data.len()).min(disk_len);
+        let dst = &mut map[off..end];
         let n = dst.len();
         dst.copy_from_slice(&data[..n]);
         // IMPORTANT:

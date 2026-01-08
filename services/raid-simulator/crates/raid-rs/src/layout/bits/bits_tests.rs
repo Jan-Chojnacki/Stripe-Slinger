@@ -61,56 +61,56 @@ fn get_set_roundtrip_and_bit_order() {
 
 #[test]
 fn xor_owned_and_assign_variants() {
-    let a = Bits::<4>([0xFF, 0x00, 0xAA, 0x55]);
-    let b = Bits::<4>([0x0F, 0x0F, 0xF0, 0xF0]);
+    let left = Bits::<4>([0xFF, 0x00, 0xAA, 0x55]);
+    let right = Bits::<4>([0x0F, 0x0F, 0xF0, 0xF0]);
     let expected = Bits::<4>([0xF0, 0x0F, 0x5A, 0xA5]);
 
-    let c = a ^ b;
-    assert_eq!(c.as_bytes(), expected.as_bytes());
+    let combined = left ^ right;
+    assert_eq!(combined.as_bytes(), expected.as_bytes());
 
-    let mut d = Bits::<4>([0xFF, 0x00, 0xAA, 0x55]);
-    d ^= Bits::<4>([0x0F, 0x0F, 0xF0, 0xF0]);
-    assert_eq!(d.as_bytes(), expected.as_bytes());
+    let mut accumulator = Bits::<4>([0xFF, 0x00, 0xAA, 0x55]);
+    accumulator ^= Bits::<4>([0x0F, 0x0F, 0xF0, 0xF0]);
+    assert_eq!(accumulator.as_bytes(), expected.as_bytes());
 
-    let x = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
-    let y = Bits::<4>([0xFF, 0xFF, 0x00, 0x00]);
-    let z = x ^ y;
-    assert_eq!(z.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
+    let input = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
+    let mask = Bits::<4>([0xFF, 0xFF, 0x00, 0x00]);
+    let masked = input ^ mask;
+    assert_eq!(masked.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
 
-    let mut m = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
-    m ^= &y;
-    assert_eq!(m.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
+    let mut mutable = Bits::<4>([0x12, 0x34, 0x56, 0x78]);
+    mutable ^= &mask;
+    assert_eq!(mutable.as_bytes(), &[0xED, 0xCB, 0x56, 0x78]);
 
-    let mut q = Bits::<4>([1, 2, 3, 4]);
-    let q_clone = q;
-    q ^= q_clone;
-    assert_eq!(q.as_bytes(), &[0, 0, 0, 0]);
+    let mut self_xor = Bits::<4>([1, 2, 3, 4]);
+    let self_xor_clone = self_xor;
+    self_xor ^= self_xor_clone;
+    assert_eq!(self_xor.as_bytes(), &[0, 0, 0, 0]);
 }
 
 #[test]
 fn xor_is_associative_and_commutative() {
-    let x = Bits::<8>([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]);
-    let y = Bits::<8>([0xFF, 0x00, 0xFF, 0x00, 0xAA, 0x55, 0xAA, 0x55]);
-    let z = Bits::<8>([0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]);
+    let left = Bits::<8>([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]);
+    let right = Bits::<8>([0xFF, 0x00, 0xFF, 0x00, 0xAA, 0x55, 0xAA, 0x55]);
+    let third = Bits::<8>([0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]);
 
-    let left = (x ^ y) ^ z;
-    let right = x ^ (y ^ z);
-    assert_eq!(left, right);
+    let assoc_left = (left ^ right) ^ third;
+    let assoc_right = left ^ (right ^ third);
+    assert_eq!(assoc_left, assoc_right);
 
-    let xy = x ^ y;
-    let yx = y ^ x;
-    assert_eq!(xy, yx);
+    let left_then_right = left ^ right;
+    let right_then_left = right ^ left;
+    assert_eq!(left_then_right, right_then_left);
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index out of bounds")]
 fn get_panics_out_of_bounds() {
     let a = Bits::<1>::zero();
     let _ = a.get(8);
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index out of bounds")]
 fn set_panics_out_of_bounds() {
     let mut a = Bits::<2>::zero();
     a.set(16, true);

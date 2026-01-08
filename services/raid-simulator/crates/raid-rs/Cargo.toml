@@ -2,6 +2,12 @@
 name = "raid-rs"
 version = "0.1.0"
 edition = "2024"
+description = "RAID layout algorithms and simulation helpers"
+license = "MIT"
+repository = "https://github.com/Stripe-Slinger/Stripe-Slinger"
+readme = "README.md"
+keywords = ["raid", "storage", "simulation", "algorithms"]
+categories = ["algorithms", "data-structures"]
 
 [dependencies]
 anyhow = "1.0.100"
