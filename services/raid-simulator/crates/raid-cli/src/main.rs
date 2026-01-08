@@ -38,7 +38,7 @@ struct Args {
     #[arg(long, env = "METRICS_CONNECT_TIMEOUT_MS", default_value_t = 2000)]
     connect_timeout_ms: u64,
 
-    #[arg(long, env = "METRICS_RPC_TIMEOUT_MS", default_value_t = 5000)]
+    #[arg(long, env = "METRICS_RPC_TIMEOUT_MS", default_value_t = 0)]
     rpc_timeout_ms: u64,
 
     #[arg(long, env = "METRICS_BACKOFF_INITIAL_MS", default_value_t = 250)]
@@ -80,10 +80,16 @@ async fn main() -> anyhow::Result<()> {
     let auth_token = args.auth_token.trim().to_string();
     let auth_token = if auth_token.is_empty() { None } else { Some(auth_token) };
 
+    let rpc_timeout = if args.rpc_timeout_ms == 0 {
+        None
+    } else {
+        Some(Duration::from_millis(args.rpc_timeout_ms))
+    };
+
     let sender_cfg = SenderConfig {
         socket_path: args.socket_path.clone(),
         connect_timeout: Duration::from_millis(args.connect_timeout_ms),
-        rpc_timeout: Duration::from_millis(args.rpc_timeout_ms),
+        rpc_timeout,
         backoff_initial: Duration::from_millis(args.backoff_initial_ms),
         backoff_max: Duration::from_millis(args.backoff_max_ms),
         jitter_ratio: args.jitter_ratio,

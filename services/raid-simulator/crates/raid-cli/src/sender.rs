@@ -13,7 +13,7 @@ use crate::uds::connect_uds;
 pub struct SenderConfig {
     pub socket_path: String,
     pub connect_timeout: Duration,
-    pub rpc_timeout: Duration,
+    pub rpc_timeout: Option<Duration>,
 
     pub backoff_initial: Duration,
     pub backoff_max: Duration,
@@ -106,7 +106,7 @@ pub async fn run_sender(
             Result<Result<tonic::Response<pb::PushResponse>, tonic::Status>, tokio::task::JoinError>,
         > = None;
 
-        let mut conn_tx = conn_tx;
+        let conn_tx = conn_tx;
         loop {
             tokio::select! {
                 _ = shutdown.changed() => {
