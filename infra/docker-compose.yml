@@ -57,17 +57,25 @@ services:
       - metrics-sockets:/sockets
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
+    privileged: true
+    pid: host
     ports:
       - "8081:8080"
-    privileged: true
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run:/var/run:rw
+      - /run/containerd:/run/containerd:rw
+    command:
+      - -logtostderr
+      - -docker_only=true
+      - -docker=unix:///var/run/docker.sock
+      - -containerd=/run/containerd/containerd.sock
+      - -containerd-namespace=moby
 
   grafana-alloy:
     image: grafana/alloy:latest

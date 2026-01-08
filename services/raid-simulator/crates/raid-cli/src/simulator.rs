@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use prost_types::Timestamp;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use rand_distr::{Distribution, Exp};
 
 use crate::pb::metrics as pb;
@@ -33,7 +33,12 @@ impl SyntheticSimulator {
         }
     }
 
-    pub fn next_batch(&mut self, source_id: &str, seq_no: u64, ops_per_tick: u32) -> pb::MetricsBatch {
+    pub fn next_batch(
+        &mut self,
+        source_id: &str,
+        seq_no: u64,
+        ops_per_tick: u32,
+    ) -> pb::MetricsBatch {
         let now = now_ts();
 
         let mut disk_ops = Vec::new();
@@ -51,7 +56,11 @@ impl SyntheticSimulator {
 
         for r in &self.raid_ids {
             let degraded = self.rng.random_bool(0.005);
-            let failed = if degraded { self.rng.random_range(1..=2) } else { 0 };
+            let failed = if degraded {
+                self.rng.random_range(1..=2)
+            } else {
+                0
+            };
             let rebuild = degraded && self.rng.random_bool(0.3);
 
             let raid1_resync = if r == "raid1" {
@@ -80,7 +89,11 @@ impl SyntheticSimulator {
 
                 disk_ops.push(pb::DiskOp {
                     disk_id,
-                    op: if is_read { pb::IoOpType::IoOpRead as i32 } else { pb::IoOpType::IoOpWrite as i32 },
+                    op: if is_read {
+                        pb::IoOpType::IoOpRead as i32
+                    } else {
+                        pb::IoOpType::IoOpWrite as i32
+                    },
                     bytes,
                     latency_seconds: latency,
                     error,
@@ -113,7 +126,11 @@ impl SyntheticSimulator {
 
                 raid_ops.push(pb::RaidOp {
                     raid_id,
-                    op: if is_read { pb::IoOpType::IoOpRead as i32 } else { pb::IoOpType::IoOpWrite as i32 },
+                    op: if is_read {
+                        pb::IoOpType::IoOpRead as i32
+                    } else {
+                        pb::IoOpType::IoOpWrite as i32
+                    },
                     bytes,
                     latency_seconds: latency,
                     error,
@@ -127,9 +144,17 @@ impl SyntheticSimulator {
             {
                 let roll: f64 = self.rng.random();
                 let (op, bytes, latency) = if roll < 0.45 {
-                    (pb::FuseOpType::FuseOpRead, self.pick_bytes(), self.sample_fuse_latency(0.030))
+                    (
+                        pb::FuseOpType::FuseOpRead,
+                        self.pick_bytes(),
+                        self.sample_fuse_latency(0.030),
+                    )
                 } else if roll < 0.90 {
-                    (pb::FuseOpType::FuseOpWrite, self.pick_bytes(), self.sample_fuse_latency(0.030))
+                    (
+                        pb::FuseOpType::FuseOpWrite,
+                        self.pick_bytes(),
+                        self.sample_fuse_latency(0.030),
+                    )
                 } else if roll < 0.97 {
                     (pb::FuseOpType::FuseOpOpen, 0, 0.0)
                 } else {
@@ -201,7 +226,9 @@ impl SyntheticSimulator {
 }
 
 fn now_ts() -> Timestamp {
-    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let dur = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
     Timestamp {
         seconds: dur.as_secs() as i64,
         nanos: dur.subsec_nanos() as i32,

@@ -11,13 +11,20 @@ use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use crate::pb::metrics;
-use crate::sender::{run_sender, SenderConfig};
+use crate::sender::{SenderConfig, run_sender};
 use crate::simulator::SyntheticSimulator;
 
 #[derive(Parser, Debug)]
-#[command(name = "raid-cli", about = "RAID simulator metrics streamer (UDS gRPC)")]
+#[command(
+    name = "raid-cli",
+    about = "RAID simulator metrics streamer (UDS gRPC)"
+)]
 struct Args {
-    #[arg(long, env = "METRICS_SOCKET_PATH", default_value = "/sockets/metrics-gateway.sock")]
+    #[arg(
+        long,
+        env = "METRICS_SOCKET_PATH",
+        default_value = "/sockets/metrics-gateway.sock"
+    )]
     socket_path: String,
 
     #[arg(long, env = "METRICS_SOURCE_ID", default_value = "raid-simulator")]
@@ -78,7 +85,11 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     let auth_token = args.auth_token.trim().to_string();
-    let auth_token = if auth_token.is_empty() { None } else { Some(auth_token) };
+    let auth_token = if auth_token.is_empty() {
+        None
+    } else {
+        Some(auth_token)
+    };
 
     let rpc_timeout = if args.rpc_timeout_ms == 0 {
         None
@@ -186,7 +197,7 @@ async fn run_generator(
 
 #[cfg(unix)]
 async fn sigterm() {
-    use tokio::signal::unix::{signal, SignalKind};
+    use tokio::signal::unix::{SignalKind, signal};
     let mut s = signal(SignalKind::terminate()).expect("install SIGTERM handler");
     s.recv().await;
 }

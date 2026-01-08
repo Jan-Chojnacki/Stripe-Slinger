@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use tokio::sync::{mpsc, watch};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::metadata::MetadataValue;
 use tonic::Request;
+use tonic::metadata::MetadataValue;
 use tracing::{debug, info, warn};
 
 use crate::pb::metrics as pb;
@@ -68,25 +68,26 @@ pub async fn run_sender(
 
         info!("sender: connecting via UDS: {}", cfg.socket_path);
 
-        let channel = match connect_uds(&cfg.socket_path, cfg.connect_timeout, cfg.rpc_timeout).await {
-            Ok(ch) => {
-                backoff = cfg.backoff_initial;
-                ch
-            }
-            Err(err) => {
-                stats.reconnects += 1;
-                let sleep_dur = with_jitter(backoff, cfg.jitter_ratio, &mut rng);
-                warn!("sender: connect failed: {err:#}; retry in {:?}", sleep_dur);
-
-                tokio::select! {
-                    _ = tokio::time::sleep(sleep_dur) => {},
-                    _ = shutdown.changed() => {},
+        let channel =
+            match connect_uds(&cfg.socket_path, cfg.connect_timeout, cfg.rpc_timeout).await {
+                Ok(ch) => {
+                    backoff = cfg.backoff_initial;
+                    ch
                 }
+                Err(err) => {
+                    stats.reconnects += 1;
+                    let sleep_dur = with_jitter(backoff, cfg.jitter_ratio, &mut rng);
+                    warn!("sender: connect failed: {err:#}; retry in {:?}", sleep_dur);
 
-                backoff = bump_backoff(backoff, cfg.backoff_max);
-                continue;
-            }
-        };
+                    tokio::select! {
+                        _ = tokio::time::sleep(sleep_dur) => {},
+                        _ = shutdown.changed() => {},
+                    }
+
+                    backoff = bump_backoff(backoff, cfg.backoff_max);
+                    continue;
+                }
+            };
 
         let mut client = pb::metrics_ingestor_client::MetricsIngestorClient::new(channel);
 
@@ -103,7 +104,10 @@ pub async fn run_sender(
         info!("sender: stream opened");
 
         let mut push_result: Option<
-            Result<Result<tonic::Response<pb::PushResponse>, tonic::Status>, tokio::task::JoinError>,
+            Result<
+                Result<tonic::Response<pb::PushResponse>, tonic::Status>,
+                tokio::task::JoinError,
+            >,
         > = None;
 
         let conn_tx = conn_tx;

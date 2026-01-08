@@ -22,7 +22,7 @@ fn writes_and_reads_file_with_checksum() {
 fn detects_corruption_on_verification() {
     let mut fs = ChecksumFs::new();
     fs.write_file(Path::new("file.bin"), b"abcdef").unwrap();
-    
+
     if let Node::File(file) = fs.root.entries.get_mut("file.bin").unwrap() {
         file.data[0] = 0u8;
     }
@@ -91,26 +91,27 @@ fn errors_when_paths_point_to_directories() {
         .expect("write_file should store file");
 
     let read_err = fs.read_file(Path::new("/configs/env"));
-    assert!(read_err
-        .unwrap_err()
-        .to_string()
-        .contains("is a directory"));
+    assert!(read_err.unwrap_err().to_string().contains("is a directory"));
 
     let verify_err = fs.verify(Path::new("/configs/env"));
-    assert!(verify_err
-        .unwrap_err()
-        .to_string()
-        .contains("is a directory"));
+    assert!(
+        verify_err
+            .unwrap_err()
+            .to_string()
+            .contains("is a directory")
+    );
 }
 
 #[test]
 fn rejects_paths_with_parent_components() {
     let mut fs = ChecksumFs::new();
     let result = fs.write_file(Path::new("../escape"), b"nope");
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("parent directory references are not supported"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("parent directory references are not supported")
+    );
 }
 
 #[test]
@@ -119,10 +120,11 @@ fn errors_when_listing_missing_directory() {
 
     let err = fs.list_dir(Path::new("/missing"));
 
-    assert!(err
-        .unwrap_err()
-        .to_string()
-        .contains("missing directory missing"));
+    assert!(
+        err.unwrap_err()
+            .to_string()
+            .contains("missing directory missing")
+    );
 }
 
 #[test]
@@ -142,10 +144,11 @@ fn errors_for_non_utf8_components() {
 
     let err = ChecksumFs::new().write_file(&path, b"bad");
 
-    assert!(err
-        .unwrap_err()
-        .to_string()
-        .contains("non utf-8 path component"));
+    assert!(
+        err.unwrap_err()
+            .to_string()
+            .contains("non utf-8 path component")
+    );
 }
 
 #[test]
@@ -170,10 +173,11 @@ fn read_fails_when_parent_directory_missing() {
 
     let err = fs.read_file(Path::new("/missing/path.txt"));
 
-    assert!(err
-        .unwrap_err()
-        .to_string()
-        .contains("missing directory missing"));
+    assert!(
+        err.unwrap_err()
+            .to_string()
+            .contains("missing directory missing")
+    );
 }
 
 #[test]
