@@ -25,6 +25,7 @@ apt-get install -y --no-install-recommends \
   jq \
   libssl-dev \
   pkg-config \
+  protobuf-compiler \
   util-linux
 
 echo "[rust-runtime-setup] Cleaning APT cache..."

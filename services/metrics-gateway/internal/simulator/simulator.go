@@ -80,8 +80,8 @@ func (s *Simulator) simulateDisks() {
 		readLatency := 0.0001 + s.rnd.Float64()*0.005
 		writeLatency := 0.0001 + s.rnd.Float64()*0.005
 
-		s.metrics.Disks.ReadLatency.WithLabelValues(diskID).Set(readLatency)
-		s.metrics.Disks.WriteLatency.WithLabelValues(diskID).Set(writeLatency)
+		s.metrics.Disks.ReadLatency.WithLabelValues(diskID).Observe(readLatency)
+		s.metrics.Disks.WriteLatency.WithLabelValues(diskID).Observe(writeLatency)
 
 		queueDepth := float64(s.rnd.Intn(32))
 		s.metrics.Disks.QueueDepth.WithLabelValues(diskID).Set(queueDepth)
@@ -124,8 +124,8 @@ func (s *Simulator) updateRaidLatency(m *metrics.RaidMetrics, raid string) {
 	readLatency := 0.0002 + s.rnd.Float64()*0.004
 	writeLatency := 0.0002 + s.rnd.Float64()*0.004
 
-	m.ReadLatency.WithLabelValues(raid).Set(readLatency)
-	m.WriteLatency.WithLabelValues(raid).Set(writeLatency)
+	m.ReadLatency.WithLabelValues(raid).Observe(readLatency)
+	m.WriteLatency.WithLabelValues(raid).Observe(writeLatency)
 }
 
 func (s *Simulator) updateRaidHealth(m *metrics.RaidMetrics, raid string) {
@@ -205,8 +205,8 @@ func (s *Simulator) simulateFuse() {
 	readLatency := 0.0002 + s.rnd.Float64()*0.003
 	writeLatency := 0.0002 + s.rnd.Float64()*0.003
 
-	m.ReadLatency.Set(readLatency)
-	m.WriteLatency.Set(writeLatency)
+	m.ReadLatency.Observe(readLatency)
+	m.WriteLatency.Observe(writeLatency)
 
 	if s.rnd.Float64() < 0.02 {
 		m.Errors.Inc()

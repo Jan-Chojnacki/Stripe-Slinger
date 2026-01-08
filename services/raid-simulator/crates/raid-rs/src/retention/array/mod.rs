@@ -94,25 +94,16 @@ impl<const D: usize, const N: usize> Array<D, N> {
 
         if let Some(restorer) = stripe.as_restore_mut() {
             let raid1_like = T::DATA == 1 && T::DISKS == D;
-            let raid3_like = T::DATA + 1 == T::DISKS && T::DISKS == D;
 
             if raid1_like {
                 for &i in &missing_or_untrusted {
                     restorer.restore(i);
                     repaired_indices.push(i);
                 }
-            } else if raid3_like {
-                if missing_or_untrusted.len() == 1 {
-                    let i = missing_or_untrusted[0];
-                    restorer.restore(i);
-                    repaired_indices.push(i);
-                }
-            } else {
-                if missing_or_untrusted.len() == 1 {
-                    let i = missing_or_untrusted[0];
-                    restorer.restore(i);
-                    repaired_indices.push(i);
-                }
+            } else if missing_or_untrusted.len() == 1 {
+                let i = missing_or_untrusted[0];
+                restorer.restore(i);
+                repaired_indices.push(i);
             }
 
             let scrub_rewrite = restorer.scrub();

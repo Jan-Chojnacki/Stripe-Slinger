@@ -5,13 +5,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
+var defaultLatencyBuckets = []float64{
+	0.00005, 0.0001, 0.00025, 0.0005,
+	0.001, 0.0025, 0.005, 0.01,
+	0.025, 0.05, 0.1, 0.25,
+	0.5, 1, 2.5, 5, 10,
+}
+
 type DiskMetrics struct {
 	ReadOps      *prometheus.CounterVec
 	WriteOps     *prometheus.CounterVec
 	ReadBytes    *prometheus.CounterVec
 	WriteBytes   *prometheus.CounterVec
-	ReadLatency  *prometheus.GaugeVec
-	WriteLatency *prometheus.GaugeVec
+	ReadLatency  *prometheus.HistogramVec
+	WriteLatency *prometheus.HistogramVec
 	QueueDepth   *prometheus.GaugeVec
 	Errors       *prometheus.CounterVec
 }
@@ -21,8 +28,8 @@ type RaidMetrics struct {
 	WriteOps           *prometheus.CounterVec
 	ReadBytes          *prometheus.CounterVec
 	WriteBytes         *prometheus.CounterVec
-	ReadLatency        *prometheus.GaugeVec
-	WriteLatency       *prometheus.GaugeVec
+	ReadLatency        *prometheus.HistogramVec
+	WriteLatency       *prometheus.HistogramVec
 	Raid1ReadsFromDisk *prometheus.CounterVec
 	Raid1Resync        *prometheus.GaugeVec
 	Raid3ParityReads   *prometheus.CounterVec
@@ -40,8 +47,8 @@ type FuseMetrics struct {
 	FsyncOps     prometheus.Counter
 	ReadBytes    prometheus.Counter
 	WriteBytes   prometheus.Counter
-	ReadLatency  prometheus.Gauge
-	WriteLatency prometheus.Gauge
+	ReadLatency  prometheus.Histogram
+	WriteLatency prometheus.Histogram
 	Errors       prometheus.Counter
 }
 
@@ -77,10 +84,7 @@ func NewMetricsRegistry() (*prometheus.Registry, *AllMetrics) {
 
 func newCounterVec(reg prometheus.Registerer, name, help string, labels ...string) *prometheus.CounterVec {
 	cv := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: name,
-			Help: help,
-		},
+		prometheus.CounterOpts{Name: name, Help: help},
 		labels,
 	)
 	reg.MustRegister(cv)
@@ -89,59 +93,89 @@ func newCounterVec(reg prometheus.Registerer, name, help string, labels ...strin
 
 func newGaugeVec(reg prometheus.Registerer, name, help string, labels ...string) *prometheus.GaugeVec {
 	gv := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: name,
-			Help: help,
-		},
+		prometheus.GaugeOpts{Name: name, Help: help},
 		labels,
 	)
 	reg.MustRegister(gv)
 	return gv
 }
 
-func newCounter(reg prometheus.Registerer, name, help string) prometheus.Counter {
-	c := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: name,
-			Help: help,
+func newHistogramVec(reg prometheus.Registerer, name, help string, buckets []float64, labels ...string) *prometheus.HistogramVec {
+	hv := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    name,
+			Help:    help,
+			Buckets: buckets,
 		},
+		labels,
 	)
+	reg.MustRegister(hv)
+	return hv
+}
+
+func newCounter(reg prometheus.Registerer, name, help string) prometheus.Counter {
+	c := prometheus.NewCounter(prometheus.CounterOpts{Name: name, Help: help})
 	reg.MustRegister(c)
 	return c
 }
 
 func newGauge(reg prometheus.Registerer, name, help string) prometheus.Gauge {
-	g := prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: name,
-			Help: help,
-		},
-	)
+	g := prometheus.NewGauge(prometheus.GaugeOpts{Name: name, Help: help})
 	reg.MustRegister(g)
 	return g
 }
 
+func newHistogram(reg prometheus.Registerer, name, help string, buckets []float64) prometheus.Histogram {
+	h := prometheus.NewHistogram(prometheus.HistogramOpts{Name: name, Help: help, Buckets: buckets})
+	reg.MustRegister(h)
+	return h
+}
+
 func NewDiskMetrics(reg prometheus.Registerer) *DiskMetrics {
 	return &DiskMetrics{
-		ReadOps:      newCounterVec(reg, "disk_read_ops", "Number of disk read operations", "disk_id"),
-		WriteOps:     newCounterVec(reg, "disk_write_ops", "Number of disk write operations", "disk_id"),
-		ReadBytes:    newCounterVec(reg, "disk_read_bytes", "Bytes read from disk", "disk_id"),
-		WriteBytes:   newCounterVec(reg, "disk_write_bytes", "Bytes written to disk", "disk_id"),
-		ReadLatency:  newGaugeVec(reg, "disk_read_latency", "Average disk read latency (seconds)", "disk_id"),
-		WriteLatency: newGaugeVec(reg, "disk_write_latency", "Average disk write latency (seconds)", "disk_id"),
-		QueueDepth:   newGaugeVec(reg, "disk_queue_depth", "Current disk queue depth", "disk_id"),
-		Errors:       newCounterVec(reg, "disk_errors", "Total disk errors", "disk_id"),
+		ReadOps:    newCounterVec(reg, "disk_read_ops", "Number of disk read operations", "disk_id"),
+		WriteOps:   newCounterVec(reg, "disk_write_ops", "Number of disk write operations", "disk_id"),
+		ReadBytes:  newCounterVec(reg, "disk_read_bytes", "Bytes read from disk", "disk_id"),
+		WriteBytes: newCounterVec(reg, "disk_write_bytes", "Bytes written to disk", "disk_id"),
+		ReadLatency: newHistogramVec(
+			reg,
+			"disk_read_latency_seconds",
+			"Disk read latency (seconds)",
+			defaultLatencyBuckets,
+			"disk_id",
+		),
+		WriteLatency: newHistogramVec(
+			reg,
+			"disk_write_latency_seconds",
+			"Disk write latency (seconds)",
+			defaultLatencyBuckets,
+			"disk_id",
+		),
+		QueueDepth: newGaugeVec(reg, "disk_queue_depth", "Current disk queue depth", "disk_id"),
+		Errors:     newCounterVec(reg, "disk_errors", "Total disk errors", "disk_id"),
 	}
 }
 
 func NewRaidMetrics(reg prometheus.Registerer) *RaidMetrics {
 	return &RaidMetrics{
-		ReadOps:            newCounterVec(reg, "raid_read_ops", "Total RAID read operations", "raid"),
-		WriteOps:           newCounterVec(reg, "raid_write_ops", "Total RAID write operations", "raid"),
-		ReadBytes:          newCounterVec(reg, "raid_read_bytes", "Total RAID read bytes", "raid"),
-		WriteBytes:         newCounterVec(reg, "raid_write_bytes", "Total RAID write bytes", "raid"),
-		ReadLatency:        newGaugeVec(reg, "raid_read_latency", "Average RAID read latency (seconds)", "raid"),
-		WriteLatency:       newGaugeVec(reg, "raid_write_latency", "Average RAID write latency (seconds)", "raid"),
+		ReadOps:    newCounterVec(reg, "raid_read_ops", "Total RAID read operations", "raid"),
+		WriteOps:   newCounterVec(reg, "raid_write_ops", "Total RAID write operations", "raid"),
+		ReadBytes:  newCounterVec(reg, "raid_read_bytes", "Total RAID read bytes", "raid"),
+		WriteBytes: newCounterVec(reg, "raid_write_bytes", "Total RAID write bytes", "raid"),
+		ReadLatency: newHistogramVec(
+			reg,
+			"raid_read_latency_seconds",
+			"RAID read latency (seconds)",
+			defaultLatencyBuckets,
+			"raid",
+		),
+		WriteLatency: newHistogramVec(
+			reg,
+			"raid_write_latency_seconds",
+			"RAID write latency (seconds)",
+			defaultLatencyBuckets,
+			"raid",
+		),
 		Raid1ReadsFromDisk: newCounterVec(reg, "raid1_reads_from_disk", "Reads served from a given disk in RAID1", "raid", "disk_id"),
 		Raid1Resync:        newGaugeVec(reg, "raid1_resync_progress", "RAID1 resync progress (0-1)", "raid"),
 		Raid3ParityReads:   newCounterVec(reg, "raid3_parity_reads", "RAID3 parity read operations", "raid"),
@@ -161,8 +195,8 @@ func NewFuseMetrics(reg prometheus.Registerer) *FuseMetrics {
 		FsyncOps:     newCounter(reg, "fuse_fsync_ops", "Number of FUSE fsync operations"),
 		ReadBytes:    newCounter(reg, "fuse_read_bytes", "Bytes read via FUSE"),
 		WriteBytes:   newCounter(reg, "fuse_write_bytes", "Bytes written via FUSE"),
-		ReadLatency:  newGauge(reg, "fuse_read_latency", "Average FUSE read latency (seconds)"),
-		WriteLatency: newGauge(reg, "fuse_write_latency", "Average FUSE write latency (seconds)"),
+		ReadLatency:  newHistogram(reg, "fuse_read_latency_seconds", "FUSE read latency (seconds)", defaultLatencyBuckets),
+		WriteLatency: newHistogram(reg, "fuse_write_latency_seconds", "FUSE write latency (seconds)", defaultLatencyBuckets),
 		Errors:       newCounter(reg, "fuse_errors", "Total FUSE errors"),
 	}
 }
