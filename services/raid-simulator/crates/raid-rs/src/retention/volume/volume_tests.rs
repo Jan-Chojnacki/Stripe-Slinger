@@ -4,6 +4,7 @@ use tempfile::TempDir;
 
 const TEST_DISKS: usize = 3;
 const CHUNK_SIZE: usize = 4;
+const DISK_LEN: u64 = 1024;
 
 fn disk_paths<const D: usize>(dir: &TempDir) -> [String; D] {
     std::array::from_fn(|i| {
@@ -18,7 +19,7 @@ fn make_volume(
     paths: &[String; TEST_DISKS],
 ) -> Volume<TEST_DISKS, CHUNK_SIZE, RAID0<TEST_DISKS, CHUNK_SIZE>> {
     Volume::new(
-        Array::init_array(paths.clone()),
+        Array::init_array(paths.clone(), DISK_LEN),
         RAID0::<TEST_DISKS, CHUNK_SIZE>::zero(),
     )
 }

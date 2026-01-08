@@ -55,4 +55,8 @@ impl<const D: usize, const N: usize> Stripe<D, N> for RAID1<D, N> {
     fn as_restore(&self) -> Option<&dyn Restore> {
         Some(self)
     }
+
+    fn as_restore_mut(&mut self) -> Option<&mut dyn Restore> {
+        Some(self)
+    }
 }

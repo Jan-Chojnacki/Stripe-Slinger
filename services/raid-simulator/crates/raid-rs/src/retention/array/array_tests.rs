@@ -53,8 +53,9 @@ impl<const D: usize, const N: usize> Stripe<D, N> for SimpleStripe<D, N> {
 fn write_persists_data_to_each_disk() {
     const D: usize = 3;
     const N: usize = 16;
+    const DISK_LEN: u64 = 1024;
     let (_temps, paths) = tmp_paths::<D>();
-    let mut array = Array::<D, N>::init_array(paths.clone());
+    let mut array = Array::<D, N>::init_array(paths.clone(), DISK_LEN);
 
     let write_data: [Bits<N>; D] = [Bits([0x11; N]), Bits([0x22; N]), Bits([0x33; N])];
     let stripe = SimpleStripe::new(write_data);
@@ -76,8 +77,9 @@ fn write_persists_data_to_each_disk() {
 fn read_restores_data_into_stripe() {
     const D: usize = 4;
     const N: usize = 8;
+    const DISK_LEN: u64 = 1024;
     let (_temps, paths) = tmp_paths::<D>();
-    let mut array = Array::<D, N>::init_array(paths.clone());
+    let mut array = Array::<D, N>::init_array(paths.clone(), DISK_LEN);
 
     let disk_contents: [Bits<N>; D] = [
         Bits([0xAA; N]),
