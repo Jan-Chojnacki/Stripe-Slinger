@@ -63,7 +63,10 @@ impl<const D: usize, const N: usize> Array<D, N> {
 
         for (disk, data) in self.0.iter_mut().zip(&data_buf) {
             if !disk.is_missing() {
-                disk.write_at(off, &data.0);
+                let written = disk.write_at(off, &data.0);
+                if written == data.0.len() {
+                    disk.needs_rebuild = false;
+                }
             }
         }
     }
@@ -72,12 +75,13 @@ impl<const D: usize, const N: usize> Array<D, N> {
         let mut data_buf: [Bits<N>; D] = [Bits::zero(); D];
 
         let mut missing_or_untrusted: Vec<usize> = Vec::new();
+        let supports_restore = stripe.as_restore().is_some();
 
         for (i, (disk, data)) in self.0.iter_mut().zip(data_buf.iter_mut()).enumerate() {
             let disk_missing = disk.is_missing();
             let untrusted = disk.needs_rebuild;
 
-            if disk_missing || untrusted {
+            if disk_missing || (supports_restore && untrusted) {
                 missing_or_untrusted.push(i);
                 continue;
             }
