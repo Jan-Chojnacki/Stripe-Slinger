@@ -1,4 +1,4 @@
-FROM rust:1.85 AS build
+FROM rust:1.92-bookworm AS build
 
 WORKDIR /src
 
@@ -22,7 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# allow_root/allow_other need user_allow_other in /etc/fuse.conf
 RUN set -eux; \
   if [ -f /etc/fuse.conf ]; then \
     sed -i 's/^[[:space:]]*#\?[[:space:]]*user_allow_other[[:space:]]*$/user_allow_other/' /etc/fuse.conf; \
