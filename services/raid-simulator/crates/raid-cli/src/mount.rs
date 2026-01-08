@@ -120,7 +120,11 @@ where
     }
 
     let fs = RaidFs { state, capacity };
-    let options = vec![MountOption::RW, MountOption::FSName("raid-fuse".into())];
+    let options = vec![
+        MountOption::RW,
+        MountOption::FSName("raid-fuse".into()),
+        MountOption::AllowRoot,
+    ];
     fuser::mount2(fs, mount_point, &options)
         .with_context(|| format!("failed to mount filesystem at {}", mount_point.display()))
 }

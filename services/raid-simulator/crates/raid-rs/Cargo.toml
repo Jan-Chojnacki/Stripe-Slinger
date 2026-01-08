@@ -2,6 +2,11 @@
 name = "raid-rs"
 version = "0.1.0"
 edition = "2024"
+description = "Core RAID simulator library."
+license = "MIT"
+repository = "https://github.com/stripe-slinger/stripe-slinger"
+keywords = ["raid", "storage", "simulator"]
+categories = ["filesystem"]
 
 [dependencies]
 anyhow = "1.0.100"
