@@ -3,6 +3,11 @@ name = "raid-cli"
 version = "0.1.0"
 edition = "2024"
 build = "build.rs"
+description = "CLI for simulating and interacting with the RAID simulator."
+license = "MIT"
+repository = "https://github.com/stripe-slinger/stripe-slinger"
+keywords = ["raid", "storage", "simulator", "cli"]
+categories = ["command-line-utilities", "filesystem"]
 
 [dependencies]
 anyhow = "1.0.100"
@@ -32,3 +37,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"
+protoc-bin-vendored = "3.2.0"

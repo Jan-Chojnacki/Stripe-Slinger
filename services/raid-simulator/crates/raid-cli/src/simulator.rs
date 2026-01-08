@@ -33,6 +33,7 @@ impl SyntheticSimulator {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn next_batch(
         &mut self,
         source_id: &str,
@@ -204,7 +205,7 @@ impl SyntheticSimulator {
     }
 
     fn pick_bytes(&mut self) -> u64 {
-        let choices = [4096u64, 8192, 16384, 32768, 65536, 131072, 262144];
+        let choices = [4096u64, 8192, 16384, 32768, 65536, 131_072, 262_144];
         let i = self.rng.random_range(0..choices.len());
         choices[i]
     }
@@ -230,7 +231,7 @@ fn now_ts() -> Timestamp {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();
     Timestamp {
-        seconds: dur.as_secs() as i64,
-        nanos: dur.subsec_nanos() as i32,
+        seconds: i64::try_from(dur.as_secs()).unwrap_or(i64::MAX),
+        nanos: i32::try_from(dur.subsec_nanos()).unwrap_or(i32::MAX),
     }
 }

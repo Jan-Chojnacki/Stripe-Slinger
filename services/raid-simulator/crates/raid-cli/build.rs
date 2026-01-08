@@ -1,6 +1,13 @@
 use std::{env, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let protoc = protoc_bin_vendored::protoc_bin_path()?;
+    let protoc_include = protoc_bin_vendored::include_path()?;
+    unsafe {
+        env::set_var("PROTOC", protoc);
+        env::set_var("PROTOC_INCLUDE", protoc_include);
+    }
+
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
 
     let repo_root = manifest_dir.join("../../../..");

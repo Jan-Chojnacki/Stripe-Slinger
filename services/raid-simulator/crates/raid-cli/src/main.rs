@@ -1,3 +1,5 @@
+#![allow(clippy::multiple_crate_versions)]
+
 use anyhow::Result;
 use clap::Parser;
 
@@ -18,6 +20,7 @@ use std::time::Duration;
 
 use tokio::sync::{mpsc, watch};
 use tracing::{info, warn};
+use tracing_subscriber::EnvFilter;
 
 use crate::pb::metrics;
 use crate::sender::{SenderConfig, SenderStats, run_sender};
@@ -39,7 +42,6 @@ fn init_tracing() {
         return;
     }
 
-    use tracing_subscriber::EnvFilter;
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();
@@ -119,10 +121,11 @@ fn run_metrics_only(args: cli::MetricsArgs) -> Result<()> {
             tokio::pin!(sigterm_fut);
 
             tokio::select! {
-                _ = tokio::signal::ctrl_c() => {
+                ctrl_c = tokio::signal::ctrl_c() => {
+                    let _ = ctrl_c;
                     info!("shutdown: ctrl-c");
                 },
-                _ = &mut sigterm_fut => {
+                () = &mut sigterm_fut => {
                     info!("shutdown: SIGTERM");
                 },
             }
@@ -208,7 +211,7 @@ async fn run_metrics_loop(
             let stats = res?;
             Ok(stats)
         }
-        _ = wait_for_shutdown(shutdown_rx) => {
+        () = wait_for_shutdown(shutdown_rx) => {
             let _ = generator.await;
             let stats = sender_task.await?;
             Ok(stats)
@@ -236,12 +239,12 @@ async fn run_generator(
 ) {
     let disk_ids = vec!["disk0", "disk1", "disk2", "disk3"]
         .into_iter()
-        .map(|s| s.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<_>>();
 
     let raid_ids = vec!["raid0", "raid1", "raid3"]
         .into_iter()
-        .map(|s| s.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<_>>();
 
     let mut sim = SyntheticSimulator::new(disk_ids, raid_ids);
@@ -259,16 +262,19 @@ async fn run_generator(
                 seq_no = seq_no.wrapping_add(1);
 
                 match tx.try_send(batch) {
-                    Ok(_) => {}
+                    Ok(()) => {}
                     Err(_e) => {
                         dropped += 1;
-                        if dropped % 100 == 0 {
+                        if dropped.is_multiple_of(100) {
                             warn!("generator: dropped_batches={}", dropped);
                         }
                     }
                 }
             },
-            _ = shutdown.changed() => {
+            changed = shutdown.changed() => {
+                if changed.is_err() {
+                    break;
+                }
                 if *shutdown.borrow() {
                     info!("generator: shutdown");
                     break;
