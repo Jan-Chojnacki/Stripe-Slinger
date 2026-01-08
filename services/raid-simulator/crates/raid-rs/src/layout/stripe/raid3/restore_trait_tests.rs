@@ -18,8 +18,8 @@ fn restore_recovers_missing_data_drive() {
         let restorer: &mut dyn Restore = &mut r;
         restorer.restore(missing);
 
-        for i in 0..RAID3::<4, 4>::PARITY_IDX {
-            assert_eq!(r.0[i], expected[i]);
+        for (i, expected_chunk) in expected.iter().enumerate().take(RAID3::<4, 4>::PARITY_IDX) {
+            assert_eq!(r.0[i], *expected_chunk);
         }
     }
 }
@@ -39,20 +39,20 @@ fn restore_recomputes_parity_when_parity_corrupted() {
     restorer.restore(RAID3::<4, 2>::PARITY_IDX);
 
     let mut expected_p = Bits::<2>::zero();
-    for i in 0..RAID3::<4, 2>::PARITY_IDX {
-        expected_p ^= r.0[i];
+    for chunk in r.0.iter().take(RAID3::<4, 2>::PARITY_IDX) {
+        expected_p ^= *chunk;
     }
     assert_eq!(r.0[RAID3::<4, 2>::PARITY_IDX], expected_p);
 
     let mut acc = Bits::<2>::zero();
-    for b in r.0.iter() {
+    for b in &r.0 {
         acc ^= *b;
     }
     assert_eq!(acc.as_bytes(), &[0u8; 2]);
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "RAID3 have 3 disks, 3 is not valid index.")]
 fn restore_panics_on_invalid_index() {
     let d0 = Bits::<1>([1]);
     let d1 = Bits::<1>([2]);

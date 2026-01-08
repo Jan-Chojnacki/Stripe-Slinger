@@ -12,11 +12,12 @@ mod stripe_trait_tests;
 pub struct RAID1<const D: usize, const N: usize>(pub [Bits<N>; D]);
 
 impl<const D: usize, const N: usize> RAID1<D, N> {
+    #[must_use]
     pub const fn zero() -> Self {
         Self([Bits::<N>::zero(); D])
     }
 
-    fn copy_from(&mut self, src: usize, dst: usize) {
+    const fn copy_from(&mut self, src: usize, dst: usize) {
         self.0[dst] = self.0[src];
     }
 }

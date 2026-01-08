@@ -53,8 +53,9 @@ impl<const D: usize, const N: usize> Stripe<D, N> for SimpleStripe<D, N> {
 fn write_persists_data_to_each_disk() {
     const D: usize = 3;
     const N: usize = 16;
+    const DISK_LEN: u64 = 1024;
     let (_temps, paths) = tmp_paths::<D>();
-    let mut array = Array::<D, N>::init_array(paths.clone());
+    let mut array = Array::<D, N>::init_array(&paths, DISK_LEN);
 
     let write_data: [Bits<N>; D] = [Bits([0x11; N]), Bits([0x22; N]), Bits([0x33; N])];
     let stripe = SimpleStripe::new(write_data);
@@ -64,11 +65,11 @@ fn write_persists_data_to_each_disk() {
 
     let expected = stripe.data();
 
-    for disk in 0..D {
+    for (disk, expected_bytes) in expected.iter().enumerate().take(D) {
         let mut buf = [0u8; N];
         let n = array.0[disk].read_at(off, &mut buf);
         assert_eq!(n, N, "read back full stripe from disk");
-        assert_eq!(buf, expected[disk].0, "disk contents must match stripe");
+        assert_eq!(buf, expected_bytes.0, "disk contents must match stripe");
     }
 }
 
@@ -76,8 +77,9 @@ fn write_persists_data_to_each_disk() {
 fn read_restores_data_into_stripe() {
     const D: usize = 4;
     const N: usize = 8;
+    const DISK_LEN: u64 = 1024;
     let (_temps, paths) = tmp_paths::<D>();
-    let mut array = Array::<D, N>::init_array(paths.clone());
+    let mut array = Array::<D, N>::init_array(&paths, DISK_LEN);
 
     let disk_contents: [Bits<N>; D] = [
         Bits([0xAA; N]),
@@ -86,8 +88,8 @@ fn read_restores_data_into_stripe() {
         Bits([0xDD; N]),
     ];
     let off = 128u64;
-    for disk in 0..D {
-        let written = array.0[disk].write_at(off, &disk_contents[disk].0);
+    for (disk, contents) in disk_contents.iter().enumerate().take(D) {
+        let written = array.0[disk].write_at(off, &contents.0);
         assert_eq!(written, N, "all bytes must be written to disk");
     }
 
