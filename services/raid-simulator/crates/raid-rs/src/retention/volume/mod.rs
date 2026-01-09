@@ -9,7 +9,16 @@ use mapper::{Geometry, geometry, locate_byte, stripe_byte_offset};
 
 use crate::layout::bits::Bits;
 use crate::layout::stripe::traits::stripe::Stripe;
+use crate::metrics::{IoOpType, RaidOp};
 use crate::retention::array::Array;
+use std::time::Instant;
+
+#[derive(Copy, Clone, Debug)]
+pub struct DiskStatus {
+    pub index: usize,
+    pub missing: bool,
+    pub needs_rebuild: bool,
+}
 
 pub struct Volume<const D: usize, const N: usize, T: Stripe<D, N>> {
     array: Array<D, N>,
@@ -43,6 +52,29 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             .0
             .iter()
             .any(|d| d.needs_rebuild && !d.is_missing())
+    }
+
+    pub fn failed_disks(&self) -> u32 {
+        self.array
+            .0
+            .iter()
+            .filter(|d| d.is_missing())
+            .count()
+            .try_into()
+            .unwrap_or(u32::MAX)
+    }
+
+    pub fn disk_statuses(&self) -> Vec<DiskStatus> {
+        self.array
+            .0
+            .iter()
+            .enumerate()
+            .map(|(index, disk)| DiskStatus {
+                index,
+                missing: disk.is_missing(),
+                needs_rebuild: disk.needs_rebuild,
+            })
+            .collect()
     }
 
     pub fn logical_capacity_bytes(&self) -> u64 {
@@ -132,6 +164,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
     }
 
     pub fn write_bytes(&mut self, byte_offset: u64, payload: &[u8]) {
+        let start = crate::metrics::is_enabled().then(Instant::now);
         let mut data_chunks = vec![Bits::<N>::zero(); T::DATA];
 
         let mut written: usize = 0;
@@ -156,9 +189,20 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             self.store_stripe(stripe_index);
             written += take;
         }
+
+        if let Some(start) = start {
+            let bytes = u64::try_from(payload.len()).unwrap_or(u64::MAX);
+            crate::metrics::record_raid_op(RaidOp {
+                op: IoOpType::Write,
+                bytes,
+                latency_seconds: start.elapsed().as_secs_f64(),
+                error: false,
+            });
+        }
     }
 
     pub fn read_bytes(&mut self, byte_offset: u64, out: &mut [u8]) {
+        let start = crate::metrics::is_enabled().then(Instant::now);
         let mut data_chunks = vec![Bits::<N>::zero(); T::DATA];
 
         let mut read: usize = 0;
@@ -180,6 +224,16 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             }
 
             read += take;
+        }
+
+        if let Some(start) = start {
+            let bytes = u64::try_from(out.len()).unwrap_or(u64::MAX);
+            crate::metrics::record_raid_op(RaidOp {
+                op: IoOpType::Read,
+                bytes,
+                latency_seconds: start.elapsed().as_secs_f64(),
+                error: false,
+            });
         }
     }
 

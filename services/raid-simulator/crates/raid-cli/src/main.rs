@@ -7,6 +7,7 @@ mod cli;
 pub mod fs;
 mod mount;
 
+mod metrics_runtime;
 mod pb;
 mod sender;
 mod simulator;
@@ -22,6 +23,7 @@ use tokio::sync::{mpsc, watch};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
+use crate::metrics_runtime::{MetricsEmitter, run_event_metrics_loop};
 use crate::pb::metrics;
 use crate::sender::{SenderConfig, SenderStats, run_sender};
 use crate::simulator::SyntheticSimulator;
@@ -51,9 +53,17 @@ fn run_fuse_with_synthetic_metrics(args: cli::FuseArgs) -> Result<()> {
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
     let metrics_args = args.metrics.clone();
-    let metrics_thread = start_metrics_thread(metrics_args, shutdown_rx);
+    let (event_tx, event_rx) = mpsc::channel(metrics_args.queue_cap);
+    let raid_id = match args.raid {
+        RaidMode::Raid0 => "raid0",
+        RaidMode::Raid1 => "raid1",
+        RaidMode::Raid3 => "raid3",
+    };
+    let emitter = MetricsEmitter::new(raid_id.to_string(), event_tx);
+    let _ = raid_rs::metrics::install_metrics_sink(emitter.clone());
+    let metrics_thread = start_event_metrics_thread(metrics_args, shutdown_rx, event_rx);
 
-    let fuse_res = run_fuse_command(args);
+    let fuse_res = run_fuse_command(args, emitter);
 
     let _ = shutdown_tx.send(true);
 
@@ -75,7 +85,7 @@ fn run_fuse_with_synthetic_metrics(args: cli::FuseArgs) -> Result<()> {
     fuse_res
 }
 
-fn run_fuse_command(args: cli::FuseArgs) -> Result<()> {
+fn run_fuse_command(args: cli::FuseArgs, metrics: std::sync::Arc<MetricsEmitter>) -> Result<()> {
     let cli::FuseArgs {
         mount_point,
         disk_dir,
@@ -89,16 +99,30 @@ fn run_fuse_command(args: cli::FuseArgs) -> Result<()> {
 
     match (raid, disks) {
         (RaidMode::Raid0, 1) => {
-            run_fuse::<1, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size)
+            run_fuse::<1, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
         }
         (_, 1) => Err(anyhow::anyhow!("raid mode requires at least 2 disks")),
-        (_, 2) => run_fuse::<2, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 3) => run_fuse::<3, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 4) => run_fuse::<4, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 5) => run_fuse::<5, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 6) => run_fuse::<6, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 7) => run_fuse::<7, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
-        (_, 8) => run_fuse::<8, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size),
+        (_, 2) => {
+            run_fuse::<2, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 3) => {
+            run_fuse::<3, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 4) => {
+            run_fuse::<4, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 5) => {
+            run_fuse::<5, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 6) => {
+            run_fuse::<6, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 7) => {
+            run_fuse::<7, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
+        (_, 8) => {
+            run_fuse::<8, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+        }
         _ => Err(anyhow::anyhow!(
             "unsupported disk count {disks}; supported range is 1-8"
         )),
@@ -161,6 +185,19 @@ fn start_metrics_thread(
             .enable_all()
             .build()?;
         rt.block_on(run_metrics_loop(args, shutdown_rx))
+    })
+}
+
+fn start_event_metrics_thread(
+    args: cli::MetricsArgs,
+    shutdown_rx: watch::Receiver<bool>,
+    event_rx: mpsc::Receiver<metrics_runtime::MetricsEvent>,
+) -> std::thread::JoinHandle<Result<SenderStats>> {
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?;
+        rt.block_on(run_event_metrics_loop(args, shutdown_rx, event_rx))
     })
 }
 

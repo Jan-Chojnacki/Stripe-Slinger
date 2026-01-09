@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use fuser::{ReplyAttr, Request, TimeOrNow};
+use fuser::{ReplyAttr, ReplyEmpty, ReplyXattr, Request, TimeOrNow};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
 use crate::fs::constants::{CTL_INO, ROOT_ID, TTL};
@@ -9,6 +9,49 @@ use crate::fs::persist::save_header_and_entry;
 use super::types::RaidFs;
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
+    pub(crate) fn op_access(&self, _req: &Request<'_>, ino: u64, _mask: i32, reply: ReplyEmpty) {
+        if ino == ROOT_ID || ino == CTL_INO {
+            reply.ok();
+            return;
+        }
+
+        let Some(index) = Self::index_for_inode(ino) else {
+            reply.error(libc::ENOENT);
+            return;
+        };
+
+        let Ok(state) = self.state.lock() else {
+            reply.error(libc::EIO);
+            return;
+        };
+
+        if state.entries.get(index).is_some_and(|entry| entry.used) {
+            reply.ok();
+        } else {
+            reply.error(libc::ENOENT);
+        }
+    }
+
+    pub(crate) fn op_getxattr(
+        &self,
+        _req: &Request<'_>,
+        ino: u64,
+        _name: &std::ffi::OsStr,
+        size: u32,
+        reply: ReplyXattr,
+    ) {
+        if ino != ROOT_ID && ino != CTL_INO && Self::index_for_inode(ino).is_none() {
+            reply.error(libc::ENOENT);
+            return;
+        }
+
+        if size == 0 {
+            reply.size(0);
+        } else {
+            reply.data(&[]);
+        }
+    }
+
     pub(crate) fn op_getattr(
         &self,
         _req: &Request<'_>,

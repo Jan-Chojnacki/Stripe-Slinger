@@ -3,7 +3,7 @@ use std::time::SystemTime;
 
 use fuser::{
     Filesystem, ReplyAttr, ReplyCreate, ReplyData, ReplyDirectory, ReplyEmpty, ReplyEntry,
-    ReplyOpen, ReplyWrite, Request, TimeOrNow,
+    ReplyOpen, ReplyWrite, ReplyXattr, Request, TimeOrNow,
 };
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
@@ -16,6 +16,21 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Filesystem for RaidFs<D, N
 
     fn getattr(&mut self, req: &Request<'_>, ino: u64, fh: Option<u64>, reply: ReplyAttr) {
         self.op_getattr(req, ino, fh, reply);
+    }
+
+    fn access(&mut self, req: &Request<'_>, ino: u64, mask: i32, reply: ReplyEmpty) {
+        self.op_access(req, ino, mask, reply);
+    }
+
+    fn getxattr(
+        &mut self,
+        req: &Request<'_>,
+        ino: u64,
+        name: &OsStr,
+        size: u32,
+        reply: ReplyXattr,
+    ) {
+        self.op_getxattr(req, ino, name, size, reply);
     }
 
     #[allow(clippy::similar_names)]
@@ -121,7 +136,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Filesystem for RaidFs<D, N
     }
 
     fn fsync(&mut self, req: &Request<'_>, ino: u64, fh: u64, datasync: bool, reply: ReplyEmpty) {
-        Self::op_fsync(req, ino, fh, datasync, reply);
+        self.op_fsync(req, ino, fh, datasync, reply);
     }
 
     fn readdir(

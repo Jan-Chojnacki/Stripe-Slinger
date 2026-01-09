@@ -3,8 +3,10 @@ mod array_tests;
 
 use crate::layout::bits::Bits;
 use crate::layout::stripe::traits::stripe::Stripe;
+use crate::metrics::{DiskOp, IoOpType};
 use crate::retention::disk::Disk;
 use std::fmt::Write;
+use std::time::Instant;
 
 pub struct Array<const D: usize, const N: usize>(pub [Disk; D]);
 
@@ -61,11 +63,23 @@ impl<const D: usize, const N: usize> Array<D, N> {
         let mut data_buf: [Bits<N>; D] = [Bits::zero(); D];
         stripe.read_raw(&mut data_buf);
 
-        for (disk, data) in self.0.iter_mut().zip(&data_buf) {
+        for (i, (disk, data)) in self.0.iter_mut().zip(&data_buf).enumerate() {
             if !disk.is_missing() {
+                let start = crate::metrics::is_enabled().then(Instant::now);
                 let written = disk.write_at(off, &data.0);
                 if written == data.0.len() {
                     disk.needs_rebuild = false;
+                }
+                if let Some(start) = start {
+                    let bytes = u64::try_from(data.0.len()).unwrap_or(u64::MAX);
+                    let error = written != data.0.len();
+                    crate::metrics::record_disk_op(DiskOp {
+                        disk_id: format!("disk{i}"),
+                        op: IoOpType::Write,
+                        bytes,
+                        latency_seconds: start.elapsed().as_secs_f64(),
+                        error,
+                    });
                 }
             }
         }
@@ -85,7 +99,19 @@ impl<const D: usize, const N: usize> Array<D, N> {
                 missing_or_untrusted.push(i);
                 continue;
             }
-            disk.read_at(off, &mut data.0);
+            let start = crate::metrics::is_enabled().then(Instant::now);
+            let read = disk.read_at(off, &mut data.0);
+            if let Some(start) = start {
+                let bytes = u64::try_from(data.0.len()).unwrap_or(u64::MAX);
+                let error = read != data.0.len();
+                crate::metrics::record_disk_op(DiskOp {
+                    disk_id: format!("disk{i}"),
+                    op: IoOpType::Read,
+                    bytes,
+                    latency_seconds: start.elapsed().as_secs_f64(),
+                    error,
+                });
+            }
         }
 
         stripe.write_raw(&data_buf);

@@ -12,6 +12,7 @@ use raid_rs::retention::volume::Volume;
 
 use crate::cli::RaidMode;
 use crate::fs::{ENTRY_SIZE, Entry, FsState, HEADER_SIZE, Header, MAX_FILES, RaidFs};
+use crate::metrics_runtime::MetricsEmitter;
 
 fn disk_paths<const D: usize>(disk_dir: &Path) -> Result<[String; D]> {
     std::fs::create_dir_all(disk_dir)
@@ -29,6 +30,7 @@ fn mount_volume<const D: usize, const N: usize, T>(
     disk_dir: &Path,
     disk_size: u64,
     layout: T,
+    metrics: std::sync::Arc<MetricsEmitter>,
 ) -> Result<()>
 where
     T: Stripe<D, N> + Send + 'static,
@@ -90,6 +92,7 @@ where
             |st| st.header.next_free.max(RaidFs::<D, N, T>::data_start()),
         );
 
+        let metrics_clone = metrics.clone();
         std::thread::spawn(move || {
             let stripes = {
                 let Ok(st) = state_clone.lock() else {
@@ -105,9 +108,27 @@ where
                 }
             };
 
+            if stripes == 0 {
+                if let Ok(st) = state_clone.lock() {
+                    record_status_snapshot(&metrics_clone, &st);
+                }
+                return;
+            }
+
+            let mut last_reported = 0;
+            let report_every = (stripes / 100).max(1);
+
             for s in 0..stripes {
                 if let Ok(mut st) = state_clone.lock() {
                     st.volume.repair_stripe(s);
+                    if s + 1 >= last_reported + report_every || s + 1 == stripes {
+                        let progress = (s + 1) as f64 / stripes as f64;
+                        metrics_clone.record_raid_state(st.volume.failed_disks(), true, progress);
+                        for status in st.volume.disk_statuses() {
+                            metrics_clone.record_disk_status(status);
+                        }
+                        last_reported = s + 1;
+                    }
                 } else {
                     break;
                 }
@@ -115,18 +136,51 @@ where
 
             if let Ok(mut st) = state_clone.lock() {
                 st.volume.clear_needs_rebuild_all();
+                metrics_clone.record_raid_state(st.volume.failed_disks(), false, 1.0);
+                for status in st.volume.disk_statuses() {
+                    metrics_clone.record_disk_status(status);
+                }
             }
         });
     }
 
-    let fs = RaidFs { state, capacity };
-    let options = vec![
-        MountOption::RW,
-        MountOption::FSName("raid-fuse".into()),
-        MountOption::AllowRoot,
-    ];
+    let fs = RaidFs {
+        state,
+        capacity,
+        metrics: Some(metrics),
+    };
+    let mut options = vec![MountOption::RW, MountOption::FSName("raid-fuse".into())];
+    if allow_other_enabled() {
+        options.push(MountOption::AllowOther);
+    }
     fuser::mount2(fs, mount_point, &options)
         .with_context(|| format!("failed to mount filesystem at {}", mount_point.display()))
+}
+
+fn record_status_snapshot<const D: usize, const N: usize, T>(
+    metrics: &MetricsEmitter,
+    state: &FsState<D, N, T>,
+) where
+    T: Stripe<D, N>,
+{
+    for status in state.volume.disk_statuses() {
+        metrics.record_disk_status(status);
+    }
+    metrics.record_raid_state(
+        state.volume.failed_disks(),
+        state.volume.any_needs_rebuild(),
+        0.0,
+    );
+}
+
+fn allow_other_enabled() -> bool {
+    let Ok(conf) = std::fs::read_to_string("/etc/fuse.conf") else {
+        return false;
+    };
+    conf.lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .any(|line| line == "user_allow_other")
 }
 
 pub fn run_fuse<const D: usize, const N: usize>(
@@ -134,6 +188,7 @@ pub fn run_fuse<const D: usize, const N: usize>(
     mount_point: &Path,
     disk_dir: &Path,
     disk_size: u64,
+    metrics: std::sync::Arc<MetricsEmitter>,
 ) -> Result<()> {
     match mode {
         RaidMode::Raid0 => mount_volume::<D, N, RAID0<D, N>>(
@@ -141,18 +196,21 @@ pub fn run_fuse<const D: usize, const N: usize>(
             disk_dir,
             disk_size,
             RAID0::<D, N>::zero(),
+            metrics,
         ),
         RaidMode::Raid1 => mount_volume::<D, N, RAID1<D, N>>(
             mount_point,
             disk_dir,
             disk_size,
             RAID1::<D, N>::zero(),
+            metrics,
         ),
         RaidMode::Raid3 => mount_volume::<D, N, RAID3<D, N>>(
             mount_point,
             disk_dir,
             disk_size,
             RAID3::<D, N>::zero(),
+            metrics,
         ),
     }
 }
