@@ -1,9 +1,9 @@
 use std::time::SystemTime;
 
-use fuser::{ReplyAttr, ReplyEmpty, ReplyXattr, Request, TimeOrNow};
+use fuser::{ReplyAttr, ReplyEmpty, ReplyStatfs, ReplyXattr, Request, TimeOrNow};
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
-use crate::fs::constants::{CTL_INO, ROOT_ID, TTL};
+use crate::fs::constants::{CTL_INO, MAX_FILES, NAME_LEN, ROOT_ID, STATFS_BLOCK_SIZE, TTL};
 use crate::fs::persist::save_header_and_entry;
 
 use super::types::RaidFs;
@@ -146,5 +146,33 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
 
         reply.attr(&TTL, &self.entry_attr(index, entry_size));
+    }
+
+    pub(crate) fn op_statfs(&self, _req: &Request<'_>, _ino: u64, reply: ReplyStatfs) {
+        let Ok(state) = self.state.lock() else {
+            reply.error(libc::EIO);
+            return;
+        };
+
+        let used_bytes = state.header.next_free.max(Self::data_start());
+        let available_bytes = self.capacity.saturating_sub(used_bytes);
+        let block_size = u64::from(STATFS_BLOCK_SIZE);
+        let blocks = self.capacity / block_size;
+        let bfree = available_bytes / block_size;
+        let bavail = bfree;
+        let files = MAX_FILES as u64;
+        let used_files = state.entries.iter().filter(|entry| entry.used).count() as u64;
+        let ffree = files.saturating_sub(used_files);
+
+        reply.statfs(
+            blocks,
+            bfree,
+            bavail,
+            files,
+            ffree,
+            STATFS_BLOCK_SIZE,
+            NAME_LEN as u32,
+            STATFS_BLOCK_SIZE,
+        );
     }
 }

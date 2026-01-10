@@ -3,7 +3,7 @@ use std::time::SystemTime;
 
 use fuser::{
     Filesystem, ReplyAttr, ReplyCreate, ReplyData, ReplyDirectory, ReplyEmpty, ReplyEntry,
-    ReplyOpen, ReplyWrite, ReplyXattr, Request, TimeOrNow,
+    ReplyOpen, ReplyStatfs, ReplyWrite, ReplyXattr, Request, TimeOrNow,
 };
 use raid_rs::layout::stripe::traits::stripe::Stripe;
 
@@ -161,5 +161,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Filesystem for RaidFs<D, N
         reply: ReplyCreate,
     ) {
         self.op_create(req, parent, name, mode, umask, flags, reply);
+    }
+
+    fn statfs(&mut self, req: &Request<'_>, ino: u64, reply: ReplyStatfs) {
+        self.op_statfs(req, ino, reply);
     }
 }

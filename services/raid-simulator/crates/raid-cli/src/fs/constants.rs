@@ -13,6 +13,7 @@ pub const HEADER_SIZE: usize = 32;
 pub const ENTRY_SIZE: usize = 88;
 pub const TABLE_SIZE: usize = HEADER_SIZE + (ENTRY_SIZE * MAX_FILES);
 pub const OPEN_DIRECT_IO: u32 = 1;
+pub const STATFS_BLOCK_SIZE: u32 = 512;
 
 pub const CTL_NAME: &str = ".raidctl";
 pub const CTL_INO: u64 = FILE_ID_BASE + (MAX_FILES as u64) + 1;
