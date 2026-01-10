@@ -42,33 +42,25 @@ services:
     depends_on:
       - init-sockets
       - metrics-gateway
-
     devices:
       - /dev/fuse:/dev/fuse
     cap_add:
       - SYS_ADMIN
     security_opt:
       - apparmor:unconfined
-
     environment:
       - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
       - METRICS_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
-
+      - SMB_USER=kamil
+      - SMB_PASS=kamil
+      - RAID_LEVEL=raid3
+      - DISK_SIZE=100000000
     volumes:
       - metrics-sockets:/sockets
       - raid-disks:/disks
       - raid-mount:/mnt/raid
-
-    command:
-      - fuse
-      - --mount-point
-      - /mnt/raid
-      - --disk-dir
-      - /disks
-      - --raid
-      - raid3
-      - --disk-size
-      - "10000000"
+    ports:
+      - "127.0.0.1:1445:445"
 
     restart: unless-stopped
 

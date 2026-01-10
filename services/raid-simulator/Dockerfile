@@ -19,6 +19,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   fuse3 \
+  samba \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
@@ -33,11 +34,15 @@ RUN set -eux; \
 RUN set -eux; \
   grep -qE '^nonroot:' /etc/group || echo 'nonroot:x:65532:' >> /etc/group; \
   grep -qE '^nonroot:' /etc/passwd || echo 'nonroot:x:65532:65532:nonroot:/nonexistent:/usr/sbin/nologin' >> /etc/passwd; \
-  mkdir -p /mnt/raid /disks /sockets; \
+  mkdir -p /mnt/raid /disks /sockets /var/run/samba; \
   chown -R 65532:65532 /mnt/raid /disks /sockets
 
 WORKDIR /app
 COPY --from=build /src/services/raid-simulator/target/release/raid-cli /usr/local/bin/raid-cli
 
-USER 65532:65532
-ENTRYPOINT ["raid-cli"]
+COPY services/raid-simulator/smb.conf /etc/samba/smb.conf
+COPY services/raid-simulator/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER 0:0
+ENTRYPOINT ["/entrypoint.sh"]
