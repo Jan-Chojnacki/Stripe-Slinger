@@ -23,12 +23,14 @@ services:
     depends_on:
       - init-sockets
     user: "65532:65532"
+    env_file:
+      - ../services/raid-simulator/.env
     environment:
       - GRPC_AUTH_ENABLED=true
-      - GRPC_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
       - GRPC_SOCKET_PATH=/sockets/metrics-gateway.sock
       - GRPC_SOCKET_MODE=0660
       - METRICS_HTTP_ADDR=:8080
+      # USUNIĘTO: GRPC_AUTH_TOKEN=${GRPC_AUTH_TOKEN} - env_file zrobi to lepiej
     volumes:
       - metrics-sockets:/sockets
     restart: unless-stopped
@@ -48,11 +50,10 @@ services:
       - SYS_ADMIN
     security_opt:
       - apparmor:unconfined
+    env_file:
+      - ../services/raid-simulator/.env
     environment:
       - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
-      - METRICS_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
-      - SMB_USER=${SMB_USER}
-      - SMB_PASS=${SMB_PASS}
       - RAID_LEVEL=raid3
       - DISK_SIZE=100000000
     volumes:
@@ -83,11 +84,11 @@ services:
   grafana-alloy:
     image: grafana/alloy:latest
     container_name: grafana-alloy
+    env_file:
+      - ../services/raid-simulator/.env
     volumes:
       - ./config.alloy:/etc/alloy/config.alloy:ro
       - ./alloy-data:/var/lib/alloy
-    env_file:
-      - ./.env
     command:
       - run
       - /etc/alloy/config.alloy
