@@ -25,10 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN set -eux; \
   if [ -f /etc/fuse.conf ]; then \
-    sed -i 's/^[[:space:]]*#\?[[:space:]]*user_allow_other[[:space:]]*$/user_allow_other/' /etc/fuse.conf; \
-    grep -q '^user_allow_other$' /etc/fuse.conf || echo 'user_allow_other' >> /etc/fuse.conf; \
+  sed -i 's/^[[:space:]]*#\?[[:space:]]*user_allow_other[[:space:]]*$/user_allow_other/' /etc/fuse.conf; \
+  grep -q '^user_allow_other$' /etc/fuse.conf || echo 'user_allow_other' >> /etc/fuse.conf; \
   else \
-    echo 'user_allow_other' > /etc/fuse.conf; \
+  echo 'user_allow_other' > /etc/fuse.conf; \
   fi
 
 RUN set -eux; \
@@ -40,8 +40,8 @@ RUN set -eux; \
 WORKDIR /app
 COPY --from=build /src/services/raid-simulator/target/release/raid-cli /usr/local/bin/raid-cli
 
-COPY services/raid-simulator/smb.conf /etc/samba/smb.conf
-COPY services/raid-simulator/entrypoint.sh /entrypoint.sh
+COPY services/raid-simulator/config/samba/smb.conf /etc/samba/smb.conf
+COPY services/raid-simulator/scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 USER 0:0

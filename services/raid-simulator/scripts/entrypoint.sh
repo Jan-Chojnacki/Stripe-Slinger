@@ -24,7 +24,7 @@ runuser -u nonroot -- \
     --disk-size "$DISK_SIZE" &
 FUSE_PID="$!"
 
-for i in $(seq 1 100); do
+for _ in $(seq 1 100); do
   mountpoint -q "$MOUNT_POINT" && break
   sleep 0.1
 done

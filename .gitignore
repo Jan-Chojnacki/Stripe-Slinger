@@ -109,3 +109,6 @@ Desktop.ini
 *.swo
 *.bak
 
+# Include raid-disks folder and its content
+**/raid-disks/
+**/raid-disks/**
