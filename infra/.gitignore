@@ -7,3 +7,19 @@ alloy-data/
 # Local Docker Compose overrides (not shared in repo)
 docker-compose.override.yml
 
+# Terraform local state and provider binaries
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Local Terraform secrets and variables (crucial for security)
+*.tfvars
+*.tfvars.json
+secrets.auto.tfvars
+
+# Storage simulator disk data and its contents
+raid-disks/
+
+# Terraform crash logs
+crash.log

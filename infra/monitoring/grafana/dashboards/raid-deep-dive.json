@@ -1,0 +1,109 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "RAID Logic Layer - Throughput & IOPS",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 2,
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(raid_read_ops{raid=\"$raid\"}[1m])", "legendFormat": "Logical Reads", "refId": "A" },
+        { "expr": "rate(raid_write_ops{raid=\"$raid\"}[1m])", "legendFormat": "Logical Writes", "refId": "B" }
+      ],
+      "title": "RAID IOPS",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "iops" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 3,
+      "targets": [
+        { "expr": "rate(raid_read_bytes{raid=\"$raid\"}[1m])", "legendFormat": "Read BW", "refId": "A" },
+        { "expr": "rate(raid_write_bytes{raid=\"$raid\"}[1m])", "legendFormat": "Write BW", "refId": "B" }
+      ],
+      "title": "RAID Throughput",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "binBps" } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 4,
+      "title": "RAID 1 - Mirroring & Resync",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 10 },
+      "id": 5,
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "values": true, "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [{ "expr": "raid1_resync_progress{raid=\"$raid\"}", "refId": "A" }],
+      "title": "Resync Progress",
+      "type": "gauge",
+      "fieldConfig": { "defaults": { "max": 1, "min": 0, "unit": "percentunit" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "id": 6,
+      "targets": [{ "expr": "rate(raid1_reads_from_disk{raid=\"$raid\"}[1m])", "legendFormat": "Disk: {{disk_id}}", "refId": "A" }],
+      "title": "RAID 1 Read Distribution (Load Balancing)",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 7,
+      "title": "RAID 3 - Parity & Stripe Efficiency",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 8,
+      "targets": [
+        { "expr": "rate(raid3_parity_reads{raid=\"$raid\"}[1m])", "legendFormat": "Parity Reads", "refId": "A" },
+        { "expr": "rate(raid3_parity_writes{raid=\"$raid\"}[1m])", "legendFormat": "Parity Writes", "refId": "B" }
+      ],
+      "title": "Parity I/O Overhead",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "id": 9,
+      "targets": [
+        { "expr": "rate(raid3_partial_stripe_writes{raid=\"$raid\"}[1m])", "legendFormat": "Partial Stripe Writes", "refId": "A" }
+      ],
+      "title": "Partial Stripe Writes (Performance Penalty)",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 50 }] }
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus" },
+      { "name": "raid", "type": "query", "datasource": "${datasource}", "definition": "label_values(raid_read_ops, raid)", "query": "label_values(raid_read_ops, raid)", "refresh": 1 }
+    ]
+  },
+  "title": "[RAID] Engine Deep-Dive",
+  "uid": "raid-deep-dive"
+}
