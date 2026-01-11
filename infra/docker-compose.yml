@@ -51,8 +51,8 @@ services:
     environment:
       - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
       - METRICS_AUTH_TOKEN=${GRPC_AUTH_TOKEN}
-      - SMB_USER=kamil
-      - SMB_PASS=kamil
+      - SMB_USER=${SMB_USER}
+      - SMB_PASS=${SMB_PASS}
       - RAID_LEVEL=raid3
       - DISK_SIZE=100000000
     volumes:
@@ -61,7 +61,6 @@ services:
       - raid-mount:/mnt/raid
     ports:
       - "127.0.0.1:1445:445"
-
     restart: unless-stopped
 
   cadvisor:
