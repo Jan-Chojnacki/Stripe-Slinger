@@ -1,24 +1,13 @@
 #!/bin/sh
 set -eu
 
-SMB_USER="${SMB_USER:-admin}"
-SMB_PASS="${SMB_PASS:-changeme}"
-
 METRICS_AUTH_TOKEN="${METRICS_AUTH_TOKEN:-}"
-
 RAID_LEVEL="${RAID_LEVEL:-raid3}"
 DISK_SIZE="${DISK_SIZE:-10000000}"
 DISK_DIR="${DISK_DIR:-/disks}"
 MOUNT_POINT="${MOUNT_POINT:-/mnt/raid}"
 
-if ! id "$SMB_USER" >/dev/null 2>&1; then
-  useradd -M -s /usr/sbin/nologin "$SMB_USER"
-fi
-
-set +x
-(echo "$SMB_PASS"; echo "$SMB_PASS") | smbpasswd -a -s "$SMB_USER"
-smbpasswd -e "$SMB_USER" >/dev/null 2>&1 || true
-set -x
+rpcbind
 
 runuser -u nonroot --preserve-environment -- \
   raid-cli fuse \
@@ -29,16 +18,20 @@ runuser -u nonroot --preserve-environment -- \
     --auth-token "$METRICS_AUTH_TOKEN" &
 FUSE_PID="$!"
 
+echo "Waiting for FUSE mount..."
 for _ in $(seq 1 100); do
   mountpoint -q "$MOUNT_POINT" && break
-  sleep 0.1
+  sleep 0.2
 done
 
-mountpoint -q "$MOUNT_POINT" || {
+if ! mountpoint -q "$MOUNT_POINT"; then
+  echo "FUSE mount failed"
   kill "$FUSE_PID" 2>/dev/null || true
   exit 1
-}
+fi
 
-trap 'kill "$FUSE_PID" 2>/dev/null || true' TERM INT
+echo "$MOUNT_POINT *(rw,fsid=0,async,no_subtree_check,no_root_squash,insecure)" > /etc/exports
 
-exec smbd -F --no-process-group
+exportfs -ra
+rpc.nfsd
+rpc.mountd -F

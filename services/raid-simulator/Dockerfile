@@ -14,12 +14,12 @@ COPY services/raid-simulator ./services/raid-simulator
 WORKDIR /src/services/raid-simulator
 RUN cargo build --release -p raid-cli --locked
 
-
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   fuse3 \
-  samba \
+  nfs-kernel-server \
+  rpcbind \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
@@ -34,13 +34,14 @@ RUN set -eux; \
 RUN set -eux; \
   grep -qE '^nonroot:' /etc/group || echo 'nonroot:x:65532:' >> /etc/group; \
   grep -qE '^nonroot:' /etc/passwd || echo 'nonroot:x:65532:65532:nonroot:/nonexistent:/usr/sbin/nologin' >> /etc/passwd; \
-  mkdir -p /mnt/raid /disks /sockets /var/run/samba; \
+  mkdir -p /mnt/raid /disks /sockets; \
   chown -R 65532:65532 /mnt/raid /disks /sockets
+
+RUN mkdir -p /var/lib/nfs /var/run/rpcbind
 
 WORKDIR /app
 COPY --from=build /src/services/raid-simulator/target/release/raid-cli /usr/local/bin/raid-cli
 
-COPY services/raid-simulator/config/samba/smb.conf /etc/samba/smb.conf
 COPY services/raid-simulator/scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

@@ -30,7 +30,6 @@ services:
       - GRPC_SOCKET_PATH=/sockets/metrics-gateway.sock
       - GRPC_SOCKET_MODE=0660
       - METRICS_HTTP_ADDR=:8080
-      # USUNIĘTO: GRPC_AUTH_TOKEN=${GRPC_AUTH_TOKEN} - env_file zrobi to lepiej
     volumes:
       - metrics-sockets:/sockets
     restart: unless-stopped
@@ -48,6 +47,7 @@ services:
       - /dev/fuse:/dev/fuse
     cap_add:
       - SYS_ADMIN
+      - NET_ADMIN
     security_opt:
       - apparmor:unconfined
     env_file:
@@ -61,7 +61,7 @@ services:
       - raid-disks:/disks
       - raid-mount:/mnt/raid
     ports:
-      - "127.0.0.1:1445:445"
+      - "2049:2049"
     restart: unless-stopped
 
   cadvisor:
