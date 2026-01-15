@@ -56,7 +56,7 @@ su -s /bin/sh -c "cargo install --locked cargo-nextest --version ${NEXTEST_VERSI
 echo "[rust-runtime-setup] Installing cargo-llvm-cov..."
 su -s /bin/sh -c "cargo install --locked cargo-llvm-cov --version ${LLVM_COV_VERSION}" ci
 
-echo "[rust-runtime-setup] Installing cargo-audit..."
-su -s /bin/sh -c "cargo install --locked cargo-audit --version ${CARGO_AUDIT_VERSION}" ci
+echo "[rust-runtime-setup] Installing cargo-audit (latest)..."
+su -s /bin/sh -c "cargo install cargo-audit --features=fix" ci
 
 echo "[rust-runtime-setup] Rust CI runtime setup completed."
