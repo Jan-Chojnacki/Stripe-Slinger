@@ -35,36 +35,36 @@ NC     := \033[0m
 
 .DEFAULT_GOAL := help
 
-help:
+help: ## Display this help message
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make $(CYAN)<target>$(NC)\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  $(CYAN)%-20s$(NC) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-up: directories docker-up wait-for-nfs mount warm-up
+up: directories docker-up wait-for-nfs mount warm-up ## Start the full environment (Docker + NFS + Mount)
 	@echo -e "$(GREEN)[INFO] Environment is fully operational on $(OS)!$(NC)"
 
-rebuild: directories docker-rebuild wait-for-nfs mount warm-up
+rebuild: directories docker-rebuild wait-for-nfs mount warm-up ## Rebuild images and restart environment
 	@echo -e "$(GREEN)[INFO] Environment rebuilt and started!$(NC)"
 
-down: unmount docker-down
+down: unmount docker-down ## Stop environment and unmount resources
 	@echo -e "$(GREEN)[INFO] Environment stopped.$(NC)"
 
-docs: docs-rust docs-go
-	@echo -e "$(GREEN)[INFO] Dokumentacja otwarta.$(NC)"
+docs: docs-rust docs-go ## Generate and open documentation for all services
+	@echo -e "$(GREEN)[INFO] Documentation opened in browser.$(NC)"
 
-docs-rust:
+docs-rust: ## Generate Rust documentation including private items
 	@cd $(RUST_DIR) && cargo doc --no-deps --document-private-items
 	@$(OPEN_CMD) $(RUST_DIR)/target/doc/raid_simulator/index.html
 
-docs-go:
+docs-go: ## Start godoc server and open the internal simulator package
 	@if ! pgrep godoc > /dev/null; then \
 		nohup godoc -http=:$(DOCS_PORT) > /dev/null 2>&1 & \
 		sleep 2; \
 	fi
 	@$(OPEN_CMD) "http://localhost:$(DOCS_PORT)/pkg/metrics-gateway/internal/simulator/"
 
-docs-clean:
+docs-clean: ## Kill running godoc server processes
 	@pkill godoc || true
 
-status:
+status: ## Check mount and container status
 	@echo -e "$(YELLOW)--- RAID MOUNT STATUS ---$(NC)"
 	@if mountpoint -q $(MOUNT_POINT); then \
 		echo -e "Mount: $(GREEN)[OK]$(NC) -> $(MOUNT_POINT)"; \
@@ -75,42 +75,41 @@ status:
 	@echo -e "\n$(YELLOW)--- DOCKER STATUS ---$(NC)"
 	@docker compose -f $(COMPOSE_FILE) ps
 
-logs:
+logs: ## Tail container logs
 	@docker compose -f $(COMPOSE_FILE) logs -f
 
-clean: unmount
+clean: unmount ## Wipe data, volumes, and simulated disks (DANGER)
+	@echo -e "$(RED)[DANGER] Performing HARD CLEANUP...$(NC)"
 	@docker compose -f $(COMPOSE_FILE) down --volumes --remove-orphans
 	@sudo rm -rf $(STORAGE_DIR)/raid-disks/*
 	@sudo rm -rf $(STORAGE_DIR)/raid-data-host/*
 	@sudo rm -rf $(STORAGE_DIR)/alloy-data/*
-	@echo -e "$(GREEN)[INFO] System clean.$(NC)"
+	@echo -e "$(GREEN)[INFO] System is clean.$(NC)"
 
-directories:
+directories: ## Create required storage directories
 	@mkdir -p $(MOUNT_POINT)
 	@mkdir -p $(STORAGE_DIR)/raid-disks
 	@mkdir -p $(STORAGE_DIR)/alloy-data
 
-docker-up:
+docker-up: ## Start docker containers
 	@docker compose -f $(COMPOSE_FILE) up -d
 
-docker-rebuild:
+docker-rebuild: ## Rebuild and start docker containers
 	@docker compose -f $(COMPOSE_FILE) up -d --build
 
-docker-down:
+docker-down: ## Stop docker containers
 	@docker compose -f $(COMPOSE_FILE) down
 
-wait-for-nfs:
+wait-for-nfs: ## Wait for NFS port availability
 	@timeout=30; \
 	while ! (echo > /dev/null > /dev/tcp/localhost/$(NFS_PORT)) >/dev/null 2>&1; do \
 		sleep 1; \
 		timeout=$$((timeout - 1)); \
-		if [ $$timeout -le 0 ]; then \
-			exit 1; \
-		fi; \
+		if [ $$timeout -le 0 ]; then exit 1; fi; \
 	done
 	@sleep 2
 
-mount:
+mount: ## Mount RAID via NFS
 	@if ! mountpoint -q $(MOUNT_POINT); then \
 		for i in {1..5}; do \
 			sudo mount -t nfs $(MOUNT_OPTS) localhost:/ $(MOUNT_POINT) && exit 0; \
@@ -119,6 +118,10 @@ mount:
 		exit 1; \
 	fi
 
-unmount:
+unmount: ## Unmount RAID directory
 	@if mountpoint -q $(MOUNT_POINT); then \
-		sudo umount -l $(MOUNT_POINT);
+		sudo umount -l $(MOUNT_POINT); \
+	fi
+
+warm-up: ## Initialize RAID controller
+	@$(TIMEOUT_CMD) 1 bash -c "echo 'init' > $(MOUNT_POINT)/.raidctl" 2>/dev/null || true
