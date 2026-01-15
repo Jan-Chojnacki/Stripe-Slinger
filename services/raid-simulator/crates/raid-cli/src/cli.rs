@@ -87,7 +87,7 @@ pub struct MetricsArgs {
     #[arg(long, env = "METRICS_SHUTDOWN_GRACE_MS", default_value_t = 1500)]
     pub shutdown_grace_ms: u64,
 
-    #[arg(long, env = "METRICS_AUTH_TOKEN", default_value = "")]
+    #[arg(long, env = "GRPC_AUTH_TOKEN", default_value = "")]
     pub auth_token: String,
 }
 
@@ -158,7 +158,7 @@ mod tests {
         let _backoff_max = EnvGuard::clear("METRICS_BACKOFF_MAX_MS");
         let _jitter = EnvGuard::clear("METRICS_JITTER_RATIO");
         let _shutdown = EnvGuard::clear("METRICS_SHUTDOWN_GRACE_MS");
-        let _auth = EnvGuard::clear("METRICS_AUTH_TOKEN");
+        let _auth = EnvGuard::clear("GRPC_AUTH_TOKEN");
 
         let cli = Cli::parse_from([
             "raid-cli",
@@ -196,7 +196,7 @@ mod tests {
         let _backoff_max = EnvGuard::set("METRICS_BACKOFF_MAX_MS", "900");
         let _jitter = EnvGuard::set("METRICS_JITTER_RATIO", "0.7");
         let _shutdown = EnvGuard::set("METRICS_SHUTDOWN_GRACE_MS", "800");
-        let _auth = EnvGuard::set("METRICS_AUTH_TOKEN", "token");
+        let _auth = EnvGuard::set("GRPC_AUTH_TOKEN", "token");
 
         let cli = Cli::parse_from(["raid-cli", "metrics"]);
         let Command::Metrics(args) = cli.command else {

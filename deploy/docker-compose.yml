@@ -24,7 +24,7 @@ services:
       - init-sockets
     user: "65532:65532"
     env_file:
-      - ../services/raid-simulator/.env
+      - ../.env
     environment:
       - GRPC_AUTH_ENABLED=true
       - GRPC_SOCKET_PATH=/sockets/metrics-gateway.sock
@@ -50,16 +50,19 @@ services:
       - NET_ADMIN
     security_opt:
       - apparmor:unconfined
+    # ZMIANA: Pobieramy konfigurację z głównego pliku .env w root
     env_file:
-      - ../services/raid-simulator/.env
+      - ../.env
     environment:
       - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
-      - RAID_LEVEL=raid3
-      - DISK_SIZE=100000000
+      # ZMIANA: Używamy zmiennych z .env zamiast wpisywać "raid3" na sztywno
+      - RAID_LEVEL=${RAID_LEVEL:-raid3}
+      - DISK_SIZE=${DISK_SIZE:-100000000}
     volumes:
       - metrics-sockets:/sockets
-      - raid-disks:/disks
-      - raid-mount:/mnt/raid
+      # ZMIANA: Lokalne dyski i mount point w folderze storage (ignorowanym przez git)
+      - ../storage/raid-disks:/disks
+      - ../storage/raid-mount:/mnt/raid
     ports:
       - "2049:2049"
     restart: unless-stopped
@@ -85,10 +88,10 @@ services:
     image: grafana/alloy:latest
     container_name: grafana-alloy
     env_file:
-      - ../services/raid-simulator/.env
+      - ../.env
     volumes:
-      - ./config.alloy:/etc/alloy/config.alloy:ro
-      - ./alloy-data:/var/lib/alloy
+      - ../observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ../storage/alloy-data:/var/lib/alloy
     command:
       - run
       - /etc/alloy/config.alloy
@@ -97,6 +100,3 @@ services:
 
 volumes:
   metrics-sockets:
-  raid-disks:
-  raid-mount:
-  alloy-data:

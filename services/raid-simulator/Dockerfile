@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-COPY proto ./proto
+COPY api/proto ./api/proto
+
 COPY services/raid-simulator ./services/raid-simulator
 
 WORKDIR /src/services/raid-simulator

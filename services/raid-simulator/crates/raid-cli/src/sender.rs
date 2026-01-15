@@ -69,7 +69,7 @@ pub async fn run_sender(
             |tok| match MetadataValue::try_from(tok) {
                 Ok(v) => Some(v),
                 Err(e) => {
-                    panic!("METRICS_AUTH_TOKEN is not valid metadata value: {e}");
+                    panic!("GRPC_AUTH_TOKEN is not valid metadata value: {e}");
                 }
             },
         );

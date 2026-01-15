@@ -3,7 +3,9 @@ set -eu
 
 ROOT_DIR="$(CDPATH='' cd "$(dirname "$0")/../../.." && pwd)"
 GW_DIR="$ROOT_DIR/services/metrics-gateway"
-PROTO_DIR="$ROOT_DIR/proto"
+
+PROTO_DIR="$ROOT_DIR/api/proto"
+
 OUT_DIR="$GW_DIR/internal/pb"
 PROTO_FILE="$PROTO_DIR/metrics/v1/ingest.proto"
 
