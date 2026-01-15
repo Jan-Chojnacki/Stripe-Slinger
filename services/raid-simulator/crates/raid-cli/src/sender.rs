@@ -1,3 +1,5 @@
+//! Background sender for streaming metrics batches over gRPC.
+
 use std::time::Duration;
 
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -10,6 +12,7 @@ use tracing::{debug, info, warn};
 use crate::pb::metrics as pb;
 use crate::uds::connect_uds;
 
+/// SenderConfig captures connection and backoff settings for metrics streaming.
 pub struct SenderConfig {
     pub socket_path: String,
     pub connect_timeout: Duration,
@@ -25,6 +28,7 @@ pub struct SenderConfig {
     pub auth_token: Option<String>,
 }
 
+/// SenderStats summarizes sender outcomes after shutdown.
 pub struct SenderStats {
     pub dropped_batches: u64,
     pub reconnects: u64,
@@ -32,6 +36,15 @@ pub struct SenderStats {
 }
 
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
+/// run_sender streams metrics batches to the gateway until shutdown.
+///
+/// # Arguments
+/// * `rx` - Receiver for metrics batches.
+/// * `shutdown` - Watch channel signaling shutdown.
+/// * `cfg` - Sender configuration settings.
+///
+/// # Returns
+/// Sender statistics collected during execution.
 pub async fn run_sender(
     mut rx: mpsc::Receiver<pb::MetricsBatch>,
     mut shutdown: watch::Receiver<bool>,

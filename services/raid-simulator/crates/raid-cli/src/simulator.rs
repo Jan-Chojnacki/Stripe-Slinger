@@ -1,3 +1,5 @@
+//! Synthetic metrics generator for the RAID simulator.
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use prost_types::Timestamp;
@@ -6,6 +8,7 @@ use rand_distr::{Distribution, Exp};
 
 use crate::pb::metrics as pb;
 
+/// SyntheticSimulator generates randomized metrics batches for testing.
 pub struct SyntheticSimulator {
     rng: StdRng,
     disk_ids: Vec<String>,
@@ -17,6 +20,11 @@ pub struct SyntheticSimulator {
 }
 
 impl SyntheticSimulator {
+    /// new constructs a simulator for the provided disk and RAID identifiers.
+    ///
+    /// # Arguments
+    /// * `disk_ids` - Disk identifiers to emit in samples.
+    /// * `raid_ids` - RAID identifiers to emit in samples.
     pub fn new(disk_ids: Vec<String>, raid_ids: Vec<String>) -> Self {
         let exp_disk = Exp::new(1.0 / 0.002).unwrap();
         let exp_raid = Exp::new(1.0 / 0.003).unwrap();
@@ -34,6 +42,15 @@ impl SyntheticSimulator {
     }
 
     #[allow(clippy::too_many_lines)]
+    /// next_batch emits a synthetic metrics batch using the current RNG state.
+    ///
+    /// # Arguments
+    /// * `source_id` - Identifier for the metrics source.
+    /// * `seq_no` - Monotonic sequence number for the batch.
+    /// * `ops_per_tick` - Approximate number of operations to generate.
+    ///
+    /// # Returns
+    /// A populated `MetricsBatch` ready to send.
     pub fn next_batch(
         &mut self,
         source_id: &str,

@@ -1,3 +1,5 @@
+//! Runtime wiring for translating simulator events into metrics batches.
+
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -14,6 +16,7 @@ use crate::cli::MetricsArgs;
 use crate::pb::metrics;
 use crate::sender::{SenderConfig, SenderStats, run_sender};
 
+/// FuseOpType identifies the kind of FUSE operation.
 #[derive(Copy, Clone, Debug)]
 pub enum FuseOpType {
     Read,
@@ -22,6 +25,7 @@ pub enum FuseOpType {
     Fsync,
 }
 
+/// FuseOp captures a FUSE-level operation sample.
 #[derive(Clone, Debug)]
 pub struct FuseOp {
     pub op: FuseOpType,
@@ -30,6 +34,7 @@ pub struct FuseOp {
     pub error: bool,
 }
 
+/// MetricsEvent describes events emitted by the simulator for batching.
 #[derive(Clone, Debug)]
 pub enum MetricsEvent {
     DiskOp(DiskOp),
@@ -39,6 +44,7 @@ pub enum MetricsEvent {
     RaidState(metrics::RaidState),
 }
 
+/// MetricsEmitter forwards simulator events into an async channel.
 #[derive(Clone)]
 pub struct MetricsEmitter {
     raid_id: String,
@@ -46,14 +52,27 @@ pub struct MetricsEmitter {
 }
 
 impl MetricsEmitter {
+    /// new creates a MetricsEmitter bound to a RAID identifier.
+    ///
+    /// # Arguments
+    /// * `raid_id` - Identifier of the RAID volume.
+    /// * `tx` - Channel sender for metrics events.
     pub fn new(raid_id: String, tx: mpsc::Sender<MetricsEvent>) -> Arc<Self> {
         Arc::new(Self { raid_id, tx })
     }
 
+    /// record_fuse_op enqueues a FUSE operation event.
+    ///
+    /// # Arguments
+    /// * `op` - FUSE operation to record.
     pub fn record_fuse_op(&self, op: FuseOp) {
         let _ = self.tx.try_send(MetricsEvent::FuseOp(op));
     }
 
+    /// record_disk_status enqueues a disk status update.
+    ///
+    /// # Arguments
+    /// * `status` - Disk status summary.
     pub fn record_disk_status(&self, status: DiskStatus) {
         let disk_id = format!("disk{}", status.index);
         let queue_depth = if status.missing {
@@ -71,6 +90,12 @@ impl MetricsEmitter {
             }));
     }
 
+    /// record_raid_state enqueues a RAID status update.
+    ///
+    /// # Arguments
+    /// * `failed_disks` - Count of failed disks.
+    /// * `rebuild_in_progress` - Whether rebuild is ongoing.
+    /// * `progress` - RAID1 resync progress value.
     pub fn record_raid_state(&self, failed_disks: u32, rebuild_in_progress: bool, progress: f64) {
         let state = metrics::RaidState {
             raid_id: self.raid_id.clone(),
@@ -96,6 +121,18 @@ impl MetricsSink for MetricsEmitter {
     }
 }
 
+/// run_event_metrics_loop batches events and streams them to the metrics gateway.
+///
+/// # Arguments
+/// * `args` - Metrics configuration arguments.
+/// * `shutdown_rx` - Watch channel signaling shutdown.
+/// * `event_rx` - Event receiver for metrics events.
+///
+/// # Returns
+/// Sender statistics from the run.
+///
+/// # Errors
+/// Returns an error if the sender task fails.
 pub async fn run_event_metrics_loop(
     args: MetricsArgs,
     mut shutdown_rx: watch::Receiver<bool>,

@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// NewMux builds an HTTP mux exposing metrics and a health check endpoint.
 func NewMux(reg *prometheus.Registry) *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -20,6 +21,7 @@ func NewMux(reg *prometheus.Registry) *http.ServeMux {
 	return mux
 }
 
+// NewHTTPServer constructs an HTTP server bound to addr with metrics handlers registered.
 func NewHTTPServer(addr string, reg *prometheus.Registry) *http.Server {
 	mux := NewMux(reg)
 

@@ -1,9 +1,11 @@
 #![allow(clippy::multiple_crate_versions)]
+//! CLI entry point for the RAID simulator and metrics streamer.
 
 use anyhow::Result;
 use clap::Parser;
 
 mod cli;
+/// fs exposes filesystem helpers for the RAID-backed FUSE implementation.
 pub mod fs;
 mod mount;
 

@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// GRPCConfig captures configuration for the UDS-based gRPC ingestion server.
 type GRPCConfig struct {
 	UDSPath    string
 	SocketMode os.FileMode
@@ -39,6 +40,7 @@ type GRPCConfig struct {
 	MaxConnAgeGrace      time.Duration
 }
 
+// LoadGRPCConfigFromEnv reads GRPCConfig values from environment variables.
 func LoadGRPCConfigFromEnv() (GRPCConfig, error) {
 	cfg := GRPCConfig{
 		UDSPath:              getenv("GRPC_UDS_PATH", "/sockets/metrics-gateway.sock"),
@@ -62,6 +64,7 @@ func LoadGRPCConfigFromEnv() (GRPCConfig, error) {
 	return cfg, nil
 }
 
+// GRPCUDSServer hosts the MetricsIngestor service on a Unix domain socket.
 type GRPCUDSServer struct {
 	cfg  GRPCConfig
 	srv  *grpc.Server
@@ -72,6 +75,7 @@ type GRPCUDSServer struct {
 	doneCh   chan struct{}
 }
 
+// NewGRPCUDSServer builds a configured gRPC UDS server and registers the ingestor service.
 func NewGRPCUDSServer(cfg GRPCConfig, ingest pb.MetricsIngestorServer) (*GRPCUDSServer, error) {
 	if err := ensureSocketDir(cfg.UDSPath); err != nil {
 		return nil, err
@@ -131,6 +135,7 @@ func NewGRPCUDSServer(cfg GRPCConfig, ingest pb.MetricsIngestorServer) (*GRPCUDS
 	}, nil
 }
 
+// Serve starts handling incoming gRPC requests until the listener is closed.
 func (s *GRPCUDSServer) Serve() error {
 	defer s.markDone()
 
@@ -141,6 +146,7 @@ func (s *GRPCUDSServer) Serve() error {
 	return nil
 }
 
+// Shutdown gracefully stops the gRPC server, closing the socket and listener.
 func (s *GRPCUDSServer) Shutdown(ctx context.Context) error {
 	stopped := make(chan struct{})
 	go func() {

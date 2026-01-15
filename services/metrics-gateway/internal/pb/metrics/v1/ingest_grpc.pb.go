@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsIngestorClient interface {
-	// Client-streaming: Rust wysyła batch'e, Go odsyła podsumowanie po zakończeniu streamu.
+	// Push starts a client-streaming RPC that ends with a summary response.
 	Push(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricsBatch, PushResponse], error)
 }
 
@@ -34,10 +34,12 @@ type metricsIngestorClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// NewMetricsIngestorClient creates a client for the MetricsIngestor service.
 func NewMetricsIngestorClient(cc grpc.ClientConnInterface) MetricsIngestorClient {
 	return &metricsIngestorClient{cc}
 }
 
+// Push starts the MetricsIngestor client streaming RPC.
 func (c *metricsIngestorClient) Push(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricsBatch, PushResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &MetricsIngestor_ServiceDesc.Streams[0], MetricsIngestor_Push_FullMethodName, cOpts...)
@@ -48,14 +50,14 @@ func (c *metricsIngestorClient) Push(ctx context.Context, opts ...grpc.CallOptio
 	return x, nil
 }
 
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+// MetricsIngestor_PushClient is a backwards-compatible alias for the generic push client stream.
 type MetricsIngestor_PushClient = grpc.ClientStreamingClient[MetricsBatch, PushResponse]
 
 // MetricsIngestorServer is the server API for MetricsIngestor service.
 // All implementations must embed UnimplementedMetricsIngestorServer
 // for forward compatibility.
 type MetricsIngestorServer interface {
-	// Client-streaming: Rust wysyła batch'e, Go odsyła podsumowanie po zakończeniu streamu.
+	// Push handles a client-streaming RPC and returns a summary response.
 	Push(grpc.ClientStreamingServer[MetricsBatch, PushResponse]) error
 	mustEmbedUnimplementedMetricsIngestorServer()
 }
@@ -67,6 +69,7 @@ type MetricsIngestorServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMetricsIngestorServer struct{}
 
+// Push returns an unimplemented error for the MetricsIngestor service.
 func (UnimplementedMetricsIngestorServer) Push(grpc.ClientStreamingServer[MetricsBatch, PushResponse]) error {
 	return status.Error(codes.Unimplemented, "method Push not implemented")
 }
@@ -80,6 +83,7 @@ type UnsafeMetricsIngestorServer interface {
 	mustEmbedUnimplementedMetricsIngestorServer()
 }
 
+// RegisterMetricsIngestorServer registers the MetricsIngestor server with a gRPC registrar.
 func RegisterMetricsIngestorServer(s grpc.ServiceRegistrar, srv MetricsIngestorServer) {
 	// If the following call panics, it indicates UnimplementedMetricsIngestorServer was
 	// embedded by pointer and is nil.  This will cause panics if an
@@ -95,7 +99,7 @@ func _MetricsIngestor_Push_Handler(srv interface{}, stream grpc.ServerStream) er
 	return srv.(MetricsIngestorServer).Push(&grpc.GenericServerStream[MetricsBatch, PushResponse]{ServerStream: stream})
 }
 
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+// MetricsIngestor_PushServer is a backwards-compatible alias for the generic push server stream.
 type MetricsIngestor_PushServer = grpc.ClientStreamingServer[MetricsBatch, PushResponse]
 
 // MetricsIngestor_ServiceDesc is the grpc.ServiceDesc for MetricsIngestor service.

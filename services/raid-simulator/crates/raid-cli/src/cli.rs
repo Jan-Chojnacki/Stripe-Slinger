@@ -1,9 +1,12 @@
+//! Command-line argument definitions for the RAID simulator CLI.
+
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::fs::DEFAULT_DISK_LEN;
 
+/// Cli defines the root command for the RAID simulator binary.
 #[derive(Parser)]
 #[command(author, version, about)]
 pub struct Cli {
@@ -11,6 +14,7 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Command enumerates the supported CLI subcommands.
 #[derive(Subcommand)]
 pub enum Command {
     Fuse(FuseArgs),
@@ -18,6 +22,7 @@ pub enum Command {
     Metrics(MetricsArgs),
 }
 
+/// FuseArgs configures the FUSE mount command.
 #[derive(Args)]
 pub struct FuseArgs {
     #[arg(long)]
@@ -39,6 +44,7 @@ pub struct FuseArgs {
     pub metrics: MetricsArgs,
 }
 
+/// MetricsArgs configures metrics streaming options.
 #[derive(Args, Debug, Clone)]
 pub struct MetricsArgs {
     #[arg(
@@ -85,6 +91,7 @@ pub struct MetricsArgs {
     pub auth_token: String,
 }
 
+/// RaidMode selects the RAID layout for the simulation.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 pub enum RaidMode {
     Raid0,

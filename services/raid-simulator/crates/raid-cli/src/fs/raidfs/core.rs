@@ -1,3 +1,5 @@
+//! Core filesystem helpers for metadata and attribute handling.
+
 use std::ffi::OsStr;
 use std::time::SystemTime;
 
@@ -33,16 +35,22 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
+    /// ctl_attr returns file attributes for the control file.
     pub fn ctl_attr(&self) -> FileAttr {
         Self::file_attr(CTL_INO, CTL_SIZE)
     }
 
     #[must_use]
+    /// data_start returns the byte offset where file data begins.
     pub const fn data_start() -> u64 {
         TABLE_SIZE as u64
     }
 
     #[must_use]
+    /// header_bytes serializes a header into a fixed-size buffer.
+    ///
+    /// # Arguments
+    /// * `header` - Header to serialize.
     pub fn header_bytes(header: &Header) -> [u8; HEADER_SIZE] {
         let mut buf = [0u8; HEADER_SIZE];
         buf[0..8].copy_from_slice(&MAGIC);
@@ -54,6 +62,13 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
+    /// parse_header attempts to parse a header from a buffer.
+    ///
+    /// # Arguments
+    /// * `buf` - Buffer containing header data.
+    ///
+    /// # Returns
+    /// `Some(Header)` if the header is valid, otherwise `None`.
     pub fn parse_header(buf: &[u8]) -> Option<Header> {
         if buf.len() < HEADER_SIZE {
             return None;
@@ -73,12 +88,17 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
+    /// inode_for converts a table index into an inode number.
     pub const fn inode_for(index: usize) -> u64 {
         FILE_ID_BASE + index as u64
     }
 
     #[allow(clippy::missing_const_for_fn)]
     #[must_use]
+    /// index_for_inode converts an inode number into a table index.
+    ///
+    /// # Returns
+    /// `Some(index)` when the inode maps to a valid entry.
     pub fn index_for_inode(ino: u64) -> Option<usize> {
         if ino < FILE_ID_BASE {
             None
@@ -91,6 +111,10 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
+    /// is_valid_name validates a filename for directory entries.
+    ///
+    /// # Arguments
+    /// * `name` - Candidate filename.
     pub fn is_valid_name(name: &OsStr) -> bool {
         if name.is_empty() || name == OsStr::new(".") || name == OsStr::new("..") {
             return false;
@@ -99,11 +123,17 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
+    /// entry_attr returns file attributes for a file entry.
+    ///
+    /// # Arguments
+    /// * `index` - Entry index in the table.
+    /// * `size` - File size in bytes.
     pub fn entry_attr(&self, index: usize, size: u64) -> FileAttr {
         Self::file_attr(Self::inode_for(index), size)
     }
 
     #[must_use]
+    /// root_attr returns file attributes for the root directory.
     pub fn root_attr(&self) -> FileAttr {
         FileAttr {
             ino: ROOT_ID,

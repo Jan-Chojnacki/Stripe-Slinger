@@ -15,11 +15,13 @@ import (
 
 var idRe = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
+// Service implements the MetricsIngestor gRPC service for ingesting metric batches.
 type Service struct {
 	pb.UnimplementedMetricsIngestorServer
 	m *metrics.AllMetrics
 }
 
+// NewService constructs a Service that records incoming metrics into the provided registry.
 func NewService(m *metrics.AllMetrics) *Service {
 	return &Service{m: m}
 }
@@ -33,6 +35,7 @@ type pushCounters struct {
 func (c *pushCounters) acceptSample() { c.acceptedSamples++ }
 func (c *pushCounters) rejectSample() { c.rejectedSamples++ }
 
+// Push ingests a client-stream of MetricsBatch messages and responds with aggregate counts.
 func (s *Service) Push(stream pb.MetricsIngestor_PushServer) error {
 	var c pushCounters
 

@@ -1,3 +1,5 @@
+//! RAID3 stripe layout implementation with a dedicated parity disk.
+
 use crate::layout::bits::Bits;
 
 #[cfg(test)]
@@ -9,12 +11,14 @@ mod stripe_impl;
 #[cfg(test)]
 mod stripe_trait_tests;
 
+/// RAID3 stores data blocks with parity on a dedicated disk.
 pub struct RAID3<const D: usize, const N: usize>(pub [Bits<N>; D]);
 
 impl<const D: usize, const N: usize> RAID3<D, N> {
     const PARITY_IDX: usize = D - 1;
 
     #[must_use]
+    /// zero returns a zero-initialized RAID3 stripe.
     pub const fn zero() -> Self {
         Self([Bits::<N>::zero(); D])
     }

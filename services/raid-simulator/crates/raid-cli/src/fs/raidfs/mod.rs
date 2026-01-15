@@ -1,3 +1,5 @@
+//! RAID-backed filesystem implementation for the FUSE layer.
+
 mod core;
 mod filesystem;
 mod ops_attr;

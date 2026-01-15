@@ -1,10 +1,14 @@
+//! Metadata structures for the RAID filesystem table.
+
 use super::constants::{ENTRY_SIZE, NAME_LEN};
 
+/// Header stores the filesystem metadata header fields.
 #[derive(Clone, Debug)]
 pub struct Header {
     pub next_free: u64,
 }
 
+/// Entry stores a directory table entry for a file.
 #[derive(Clone, Debug)]
 pub struct Entry {
     pub name: String,
@@ -16,6 +20,7 @@ pub struct Entry {
 #[allow(clippy::missing_const_for_fn)]
 impl Entry {
     #[must_use]
+    /// empty returns an unused entry with zeroed fields.
     pub fn empty() -> Self {
         Self {
             name: String::new(),
@@ -26,6 +31,10 @@ impl Entry {
     }
 
     #[must_use]
+    /// to_bytes serializes the entry into a fixed-size buffer.
+    ///
+    /// # Returns
+    /// A byte array containing the serialized entry.
     pub fn to_bytes(&self) -> [u8; ENTRY_SIZE] {
         let mut buf = [0u8; ENTRY_SIZE];
         buf[0] = u8::from(self.used);
@@ -38,6 +47,10 @@ impl Entry {
     }
 
     #[must_use]
+    /// from_bytes deserializes an entry from a fixed-size buffer.
+    ///
+    /// # Arguments
+    /// * `buf` - Buffer containing serialized entry data.
     pub fn from_bytes(buf: &[u8]) -> Self {
         let used = buf.first().copied().unwrap_or(0) == 1;
         let offset = u64::from_le_bytes(buf[8..16].try_into().unwrap());

@@ -1,3 +1,5 @@
+//! Disk array helpers for reading and writing RAID stripes.
+
 #[cfg(test)]
 mod array_tests;
 
@@ -8,10 +10,16 @@ use crate::retention::disk::Disk;
 use std::fmt::Write;
 use std::time::Instant;
 
+/// Array manages a fixed set of disk images for a RAID volume.
 pub struct Array<const D: usize, const N: usize>(pub [Disk; D]);
 
 impl<const D: usize, const N: usize> Array<D, N> {
     #[must_use]
+    /// init_array creates and opens a disk array using the provided paths.
+    ///
+    /// # Arguments
+    /// * `paths` - Disk image paths, one per disk.
+    /// * `len` - Length of each disk image in bytes.
     pub fn init_array(paths: &[String; D], len: u64) -> Self {
         let array: [Disk; D] =
             std::array::from_fn(|i| Disk::open_prealloc(&paths[i], len).unwrap());
@@ -20,10 +28,18 @@ impl<const D: usize, const N: usize> Array<D, N> {
     }
 
     #[must_use]
+    /// disk_len returns the length of the first disk in the array.
     pub fn disk_len(&self) -> u64 {
         self.0.first().map_or(0, Disk::len)
     }
 
+    /// fail_disk simulates a disk failure at the specified index.
+    ///
+    /// # Arguments
+    /// * `i` - Index of the disk to fail.
+    ///
+    /// # Errors
+    /// Returns an error if the index is out of range or the disk cannot fail.
     pub fn fail_disk(&mut self, i: usize) -> anyhow::Result<()> {
         if i >= D {
             anyhow::bail!("disk index out of range: {i} (D={D})");
@@ -31,6 +47,13 @@ impl<const D: usize, const N: usize> Array<D, N> {
         self.0[i].fail()
     }
 
+    /// replace_disk replaces the disk image at the specified index.
+    ///
+    /// # Arguments
+    /// * `i` - Index of the disk to replace.
+    ///
+    /// # Errors
+    /// Returns an error if the index is out of range or the disk cannot be replaced.
     pub fn replace_disk(&mut self, i: usize) -> anyhow::Result<()> {
         if i >= D {
             anyhow::bail!("disk index out of range: {i} (D={D})");
@@ -39,6 +62,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
     }
 
     #[must_use]
+    /// status_string returns a human-readable status summary for each disk.
     pub fn status_string(&self) -> String {
         let mut out = String::new();
         for (i, d) in self.0.iter().enumerate() {
@@ -59,6 +83,11 @@ impl<const D: usize, const N: usize> Array<D, N> {
         out
     }
 
+    /// write persists a stripe to disk at the specified offset.
+    ///
+    /// # Arguments
+    /// * `off` - Byte offset within each disk.
+    /// * `stripe` - Stripe data to write.
     pub fn write<T: Stripe<D, N>>(&mut self, off: u64, stripe: &T) {
         let mut data_buf: [Bits<N>; D] = [Bits::zero(); D];
         stripe.read_raw(&mut data_buf);
@@ -85,6 +114,11 @@ impl<const D: usize, const N: usize> Array<D, N> {
         }
     }
 
+    /// read loads a stripe from disk at the specified offset.
+    ///
+    /// # Arguments
+    /// * `off` - Byte offset within each disk.
+    /// * `stripe` - Stripe object to populate.
     pub fn read<T: Stripe<D, N>>(&mut self, off: u64, stripe: &mut T) {
         let mut data_buf: [Bits<N>; D] = [Bits::zero(); D];
 

@@ -12,6 +12,7 @@ var defaultLatencyBuckets = []float64{
 	0.5, 1, 2.5, 5, 10,
 }
 
+// DiskMetrics bundles Prometheus metrics tracking disk IO behavior.
 type DiskMetrics struct {
 	ReadOps      *prometheus.CounterVec
 	WriteOps     *prometheus.CounterVec
@@ -23,6 +24,7 @@ type DiskMetrics struct {
 	Errors       *prometheus.CounterVec
 }
 
+// RaidMetrics bundles Prometheus metrics tracking RAID volume behavior.
 type RaidMetrics struct {
 	ReadOps            *prometheus.CounterVec
 	WriteOps           *prometheus.CounterVec
@@ -40,6 +42,7 @@ type RaidMetrics struct {
 	RebuildInProgress  *prometheus.GaugeVec
 }
 
+// FuseMetrics bundles Prometheus metrics tracking FUSE-level operations.
 type FuseMetrics struct {
 	ReadOps      prometheus.Counter
 	WriteOps     prometheus.Counter
@@ -52,11 +55,13 @@ type FuseMetrics struct {
 	Errors       prometheus.Counter
 }
 
+// ProcessMetrics bundles Prometheus gauges tracking simulated process usage.
 type ProcessMetrics struct {
 	CPUSeconds     prometheus.Gauge
 	ResidentMemory prometheus.Gauge
 }
 
+// AllMetrics aggregates all metric families used by the gateway.
 type AllMetrics struct {
 	Disks   *DiskMetrics
 	Raid    *RaidMetrics
@@ -64,6 +69,7 @@ type AllMetrics struct {
 	Process *ProcessMetrics
 }
 
+// NewMetricsRegistry creates a registry and registers all metrics used by the gateway.
 func NewMetricsRegistry() (*prometheus.Registry, *AllMetrics) {
 	reg := prometheus.NewRegistry()
 
@@ -131,6 +137,7 @@ func newHistogram(reg prometheus.Registerer, name, help string, buckets []float6
 	return h
 }
 
+// NewDiskMetrics registers disk metrics with the provided registry.
 func NewDiskMetrics(reg prometheus.Registerer) *DiskMetrics {
 	return &DiskMetrics{
 		ReadOps:    newCounterVec(reg, "disk_read_ops", "Number of disk read operations", "disk_id"),
@@ -156,6 +163,7 @@ func NewDiskMetrics(reg prometheus.Registerer) *DiskMetrics {
 	}
 }
 
+// NewRaidMetrics registers RAID metrics with the provided registry.
 func NewRaidMetrics(reg prometheus.Registerer) *RaidMetrics {
 	return &RaidMetrics{
 		ReadOps:    newCounterVec(reg, "raid_read_ops", "Total RAID read operations", "raid"),
@@ -187,6 +195,7 @@ func NewRaidMetrics(reg prometheus.Registerer) *RaidMetrics {
 	}
 }
 
+// NewFuseMetrics registers FUSE metrics with the provided registry.
 func NewFuseMetrics(reg prometheus.Registerer) *FuseMetrics {
 	return &FuseMetrics{
 		ReadOps:      newCounter(reg, "fuse_read_ops", "Number of FUSE read operations"),
@@ -201,6 +210,7 @@ func NewFuseMetrics(reg prometheus.Registerer) *FuseMetrics {
 	}
 }
 
+// NewProcessMetrics registers process metrics with the provided registry.
 func NewProcessMetrics(reg prometheus.Registerer) *ProcessMetrics {
 	return &ProcessMetrics{
 		CPUSeconds:     newGauge(reg, "process_cpu_seconds", "Simulated CPU seconds used by the RAID simulator"),

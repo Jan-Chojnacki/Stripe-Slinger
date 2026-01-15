@@ -1,3 +1,5 @@
+//! Disk-backed storage primitives for RAID retention.
+
 #[cfg(test)]
 mod disk_tests;
 
@@ -7,6 +9,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Disk manages a file-backed disk image with optional memory mapping.
 pub struct Disk {
     path: PathBuf,
     file: Option<File>,
@@ -17,6 +20,14 @@ pub struct Disk {
 }
 
 impl Disk {
+    /// open_prealloc opens or creates a disk image, ensuring it is preallocated.
+    ///
+    /// # Arguments
+    /// * `path` - Path to the disk image file.
+    /// * `len` - Desired length of the disk image in bytes.
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be created, resized, or memory-mapped.
     pub fn open_prealloc(path: &str, len: u64) -> anyhow::Result<Self> {
         let path = PathBuf::from(path);
         let existed = path.exists();
@@ -44,6 +55,10 @@ impl Disk {
         })
     }
 
+    /// fail marks the disk as failed and releases its resources.
+    ///
+    /// # Errors
+    /// Returns an error if the disk image cannot be renamed.
     pub fn fail(&mut self) -> anyhow::Result<()> {
         if self.path.exists() {
             let ts = SystemTime::now()
@@ -59,6 +74,10 @@ impl Disk {
         Ok(())
     }
 
+    /// replace recreates the disk image and marks it for rebuild.
+    ///
+    /// # Errors
+    /// Returns an error if the disk image cannot be recreated or mapped.
     pub fn replace(&mut self) -> anyhow::Result<()> {
         let file = std::fs::OpenOptions::new()
             .read(true)
@@ -78,26 +97,31 @@ impl Disk {
     }
 
     #[must_use]
+    /// path returns the filesystem path of the disk image.
     pub fn path(&self) -> &Path {
         &self.path
     }
 
     #[must_use]
+    /// len returns the disk image length in bytes.
     pub const fn len(&self) -> u64 {
         self.len
     }
 
     #[must_use]
+    /// is_operational reports whether the disk is open and mapped.
     pub const fn is_operational(&self) -> bool {
         self.file.is_some() && self.map.is_some()
     }
 
     #[must_use]
+    /// is_empty reports whether the disk length is zero.
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     #[must_use]
+    /// is_missing reports whether the disk is missing or not operational.
     pub fn is_missing(&self) -> bool {
         if !self.is_operational() {
             return true;
@@ -108,6 +132,14 @@ impl Disk {
             .unwrap_or(true)
     }
 
+    /// read_at reads bytes starting at the given offset into the buffer.
+    ///
+    /// # Arguments
+    /// * `off` - Byte offset within the disk image.
+    /// * `buf` - Output buffer to populate.
+    ///
+    /// # Returns
+    /// The number of bytes copied into `buf`.
     pub fn read_at(&self, off: u64, buf: &mut [u8]) -> usize {
         let Some(map) = self.map.as_ref() else {
             return 0;
@@ -128,6 +160,14 @@ impl Disk {
         n
     }
 
+    /// write_at writes bytes starting at the given offset from the input slice.
+    ///
+    /// # Arguments
+    /// * `off` - Byte offset within the disk image.
+    /// * `data` - Bytes to write.
+    ///
+    /// # Returns
+    /// The number of bytes written from `data`.
     pub fn write_at(&mut self, off: u64, data: &[u8]) -> usize {
         let Some(map) = self.map.as_mut() else {
             return 0;

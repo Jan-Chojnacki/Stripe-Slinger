@@ -1,3 +1,5 @@
+//! Generated protobuf bindings for metrics ingestion.
+
 #[allow(
     clippy::struct_excessive_bools,
     clippy::enum_variant_names,
@@ -5,6 +7,7 @@
     clippy::missing_const_for_fn,
     clippy::trivially_copy_pass_by_ref
 )]
+/// metrics exposes protobuf-generated types for the metrics service.
 pub mod metrics {
     tonic::include_proto!("metrics.v1");
 }

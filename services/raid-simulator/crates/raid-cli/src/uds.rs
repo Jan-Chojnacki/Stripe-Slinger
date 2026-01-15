@@ -1,3 +1,5 @@
+//! Unix-domain socket helpers for connecting to the metrics gateway.
+
 use std::time::Duration;
 
 use anyhow::Context;
@@ -7,6 +9,18 @@ use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint};
 use tower::util::service_fn;
 
+/// connect_uds connects to a gRPC endpoint over a Unix domain socket.
+///
+/// # Arguments
+/// * `socket_path` - Path to the Unix domain socket.
+/// * `connect_timeout` - Timeout for establishing the connection.
+/// * `rpc_timeout` - Optional per-RPC timeout.
+///
+/// # Returns
+/// A configured gRPC channel.
+///
+/// # Errors
+/// Returns an error if the connection cannot be established.
 pub async fn connect_uds(
     socket_path: &str,
     connect_timeout: Duration,

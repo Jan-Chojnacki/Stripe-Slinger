@@ -9,6 +9,7 @@ import (
 	"metrics-gateway/internal/metrics"
 )
 
+// Simulator generates synthetic metrics and writes them into a metrics registry.
 type Simulator struct {
 	metrics *metrics.AllMetrics
 	diskIDs []string
@@ -19,6 +20,7 @@ type Simulator struct {
 	memoryBytes float64
 }
 
+// NewSimulator constructs a Simulator with seeded randomness and device identifiers.
 func NewSimulator(m *metrics.AllMetrics, diskIDs, raidIDs []string) *Simulator {
 	src := rand.NewSource(time.Now().UnixNano())
 	rnd := rand.New(src)
@@ -36,6 +38,7 @@ func NewSimulator(m *metrics.AllMetrics, diskIDs, raidIDs []string) *Simulator {
 	return s
 }
 
+// Start launches a goroutine that ticks the simulator at the requested interval.
 func (s *Simulator) Start(ctx context.Context, wg *sync.WaitGroup, interval time.Duration) {
 	wg.Add(1)
 

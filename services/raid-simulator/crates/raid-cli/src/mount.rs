@@ -1,3 +1,5 @@
+//! FUSE mount helpers for RAID-backed filesystems.
+
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -183,6 +185,17 @@ fn allow_other_enabled() -> bool {
         .any(|line| line == "user_allow_other")
 }
 
+/// run_fuse mounts the RAID-backed filesystem using the selected mode.
+///
+/// # Arguments
+/// * `mode` - RAID mode to mount.
+/// * `mount_point` - Filesystem mount point.
+/// * `disk_dir` - Directory containing disk images.
+/// * `disk_size` - Size of each disk image in bytes.
+/// * `metrics` - Metrics emitter for runtime status updates.
+///
+/// # Errors
+/// Returns an error if the mount cannot be initialized.
 pub fn run_fuse<const D: usize, const N: usize>(
     mode: RaidMode,
     mount_point: &Path,

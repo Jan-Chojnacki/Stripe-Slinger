@@ -22,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// IoOpType enumerates IO operation types for disk and RAID events.
 type IoOpType int32
 
 const (
@@ -44,34 +45,40 @@ var (
 	}
 )
 
+// Enum returns a pointer to the enum value.
 func (x IoOpType) Enum() *IoOpType {
 	p := new(IoOpType)
 	*p = x
 	return p
 }
 
+// String returns the string representation of the value.
 func (x IoOpType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
+// Descriptor returns the protobuf descriptor.
 func (IoOpType) Descriptor() protoreflect.EnumDescriptor {
 	return file_metrics_v1_ingest_proto_enumTypes[0].Descriptor()
 }
 
+// Type returns the enum type descriptor.
 func (IoOpType) Type() protoreflect.EnumType {
 	return &file_metrics_v1_ingest_proto_enumTypes[0]
 }
 
+// Number returns the enum value as a protoreflect number.
 func (x IoOpType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use IoOpType.Descriptor instead.
+// EnumDescriptor returns the legacy enum descriptor. Deprecated: Use IoOpType.Descriptor instead.
 func (IoOpType) EnumDescriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{0}
 }
 
 // ----- FUSE -----
+// FuseOpType enumerates FUSE operation types for filesystem events.
 type FuseOpType int32
 
 const (
@@ -100,33 +107,39 @@ var (
 	}
 )
 
+// Enum returns a pointer to the enum value.
 func (x FuseOpType) Enum() *FuseOpType {
 	p := new(FuseOpType)
 	*p = x
 	return p
 }
 
+// String returns the string representation of the value.
 func (x FuseOpType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
+// Descriptor returns the protobuf descriptor.
 func (FuseOpType) Descriptor() protoreflect.EnumDescriptor {
 	return file_metrics_v1_ingest_proto_enumTypes[1].Descriptor()
 }
 
+// Type returns the enum type descriptor.
 func (FuseOpType) Type() protoreflect.EnumType {
 	return &file_metrics_v1_ingest_proto_enumTypes[1]
 }
 
+// Number returns the enum value as a protoreflect number.
 func (x FuseOpType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use FuseOpType.Descriptor instead.
+// EnumDescriptor returns the legacy enum descriptor. Deprecated: Use FuseOpType.Descriptor instead.
 func (FuseOpType) EnumDescriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{1}
 }
 
+// MetricsBatch aggregates a batch of metrics sent by a client.
 type MetricsBatch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SourceId      string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"` // np. "raid-simulator-1"
@@ -142,6 +155,7 @@ type MetricsBatch struct {
 	sizeCache     protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *MetricsBatch) Reset() {
 	*x = MetricsBatch{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[0]
@@ -149,12 +163,15 @@ func (x *MetricsBatch) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *MetricsBatch) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*MetricsBatch) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *MetricsBatch) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[0]
 	if x != nil {
@@ -167,11 +184,12 @@ func (x *MetricsBatch) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MetricsBatch.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use MetricsBatch.ProtoReflect.Descriptor instead.
 func (*MetricsBatch) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{0}
 }
 
+// GetSourceId returns the SourceId field.
 func (x *MetricsBatch) GetSourceId() string {
 	if x != nil {
 		return x.SourceId
@@ -179,6 +197,7 @@ func (x *MetricsBatch) GetSourceId() string {
 	return ""
 }
 
+// GetSeqNo returns the SeqNo field.
 func (x *MetricsBatch) GetSeqNo() uint64 {
 	if x != nil {
 		return x.SeqNo
@@ -186,6 +205,7 @@ func (x *MetricsBatch) GetSeqNo() uint64 {
 	return 0
 }
 
+// GetTimestamp returns the Timestamp field.
 func (x *MetricsBatch) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
@@ -193,6 +213,7 @@ func (x *MetricsBatch) GetTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
+// GetDiskOps returns the DiskOps field.
 func (x *MetricsBatch) GetDiskOps() []*DiskOp {
 	if x != nil {
 		return x.DiskOps
@@ -200,6 +221,7 @@ func (x *MetricsBatch) GetDiskOps() []*DiskOp {
 	return nil
 }
 
+// GetDiskStates returns the DiskStates field.
 func (x *MetricsBatch) GetDiskStates() []*DiskState {
 	if x != nil {
 		return x.DiskStates
@@ -207,6 +229,7 @@ func (x *MetricsBatch) GetDiskStates() []*DiskState {
 	return nil
 }
 
+// GetRaidOps returns the RaidOps field.
 func (x *MetricsBatch) GetRaidOps() []*RaidOp {
 	if x != nil {
 		return x.RaidOps
@@ -214,6 +237,7 @@ func (x *MetricsBatch) GetRaidOps() []*RaidOp {
 	return nil
 }
 
+// GetRaidStates returns the RaidStates field.
 func (x *MetricsBatch) GetRaidStates() []*RaidState {
 	if x != nil {
 		return x.RaidStates
@@ -221,6 +245,7 @@ func (x *MetricsBatch) GetRaidStates() []*RaidState {
 	return nil
 }
 
+// GetFuseOps returns the FuseOps field.
 func (x *MetricsBatch) GetFuseOps() []*FuseOp {
 	if x != nil {
 		return x.FuseOps
@@ -228,6 +253,7 @@ func (x *MetricsBatch) GetFuseOps() []*FuseOp {
 	return nil
 }
 
+// GetProcess returns the Process field.
 func (x *MetricsBatch) GetProcess() *ProcessSample {
 	if x != nil {
 		return x.Process
@@ -236,6 +262,7 @@ func (x *MetricsBatch) GetProcess() *ProcessSample {
 }
 
 // ----- DISK -----
+// DiskOp represents a single disk IO operation sample.
 type DiskOp struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DiskId         string                 `protobuf:"bytes,1,opt,name=disk_id,json=diskId,proto3" json:"disk_id,omitempty"`                           // label: disk_id
@@ -247,6 +274,7 @@ type DiskOp struct {
 	sizeCache      protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *DiskOp) Reset() {
 	*x = DiskOp{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[1]
@@ -254,12 +282,15 @@ func (x *DiskOp) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *DiskOp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*DiskOp) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *DiskOp) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[1]
 	if x != nil {
@@ -272,11 +303,12 @@ func (x *DiskOp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiskOp.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use DiskOp.ProtoReflect.Descriptor instead.
 func (*DiskOp) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{1}
 }
 
+// GetDiskId returns the DiskId field.
 func (x *DiskOp) GetDiskId() string {
 	if x != nil {
 		return x.DiskId
@@ -284,6 +316,7 @@ func (x *DiskOp) GetDiskId() string {
 	return ""
 }
 
+// GetOp returns the Op field.
 func (x *DiskOp) GetOp() IoOpType {
 	if x != nil {
 		return x.Op
@@ -291,6 +324,7 @@ func (x *DiskOp) GetOp() IoOpType {
 	return IoOpType_IO_OP_UNSPECIFIED
 }
 
+// GetBytes returns the Bytes field.
 func (x *DiskOp) GetBytes() uint64 {
 	if x != nil {
 		return x.Bytes
@@ -298,6 +332,7 @@ func (x *DiskOp) GetBytes() uint64 {
 	return 0
 }
 
+// GetLatencySeconds returns the LatencySeconds field.
 func (x *DiskOp) GetLatencySeconds() float64 {
 	if x != nil {
 		return x.LatencySeconds
@@ -305,6 +340,7 @@ func (x *DiskOp) GetLatencySeconds() float64 {
 	return 0
 }
 
+// GetError returns the Error field.
 func (x *DiskOp) GetError() bool {
 	if x != nil {
 		return x.Error
@@ -312,6 +348,7 @@ func (x *DiskOp) GetError() bool {
 	return false
 }
 
+// DiskState captures a point-in-time disk state sample.
 type DiskState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DiskId        string                 `protobuf:"bytes,1,opt,name=disk_id,json=diskId,proto3" json:"disk_id,omitempty"`
@@ -320,6 +357,7 @@ type DiskState struct {
 	sizeCache     protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *DiskState) Reset() {
 	*x = DiskState{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[2]
@@ -327,12 +365,15 @@ func (x *DiskState) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *DiskState) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*DiskState) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *DiskState) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[2]
 	if x != nil {
@@ -345,11 +386,12 @@ func (x *DiskState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiskState.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use DiskState.ProtoReflect.Descriptor instead.
 func (*DiskState) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{2}
 }
 
+// GetDiskId returns the DiskId field.
 func (x *DiskState) GetDiskId() string {
 	if x != nil {
 		return x.DiskId
@@ -357,6 +399,7 @@ func (x *DiskState) GetDiskId() string {
 	return ""
 }
 
+// GetQueueDepth returns the QueueDepth field.
 func (x *DiskState) GetQueueDepth() float64 {
 	if x != nil {
 		return x.QueueDepth
@@ -365,6 +408,7 @@ func (x *DiskState) GetQueueDepth() float64 {
 }
 
 // ----- RAID -----
+// RaidOp represents a single RAID IO operation sample.
 type RaidOp struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	RaidId         string                 `protobuf:"bytes,1,opt,name=raid_id,json=raidId,proto3" json:"raid_id,omitempty"` // label: raid (np. "raid0", "raid1", "raid3")
@@ -382,6 +426,7 @@ type RaidOp struct {
 	sizeCache               protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *RaidOp) Reset() {
 	*x = RaidOp{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[3]
@@ -389,12 +434,15 @@ func (x *RaidOp) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *RaidOp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*RaidOp) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *RaidOp) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[3]
 	if x != nil {
@@ -407,11 +455,12 @@ func (x *RaidOp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RaidOp.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use RaidOp.ProtoReflect.Descriptor instead.
 func (*RaidOp) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{3}
 }
 
+// GetRaidId returns the RaidId field.
 func (x *RaidOp) GetRaidId() string {
 	if x != nil {
 		return x.RaidId
@@ -419,6 +468,7 @@ func (x *RaidOp) GetRaidId() string {
 	return ""
 }
 
+// GetOp returns the Op field.
 func (x *RaidOp) GetOp() IoOpType {
 	if x != nil {
 		return x.Op
@@ -426,6 +476,7 @@ func (x *RaidOp) GetOp() IoOpType {
 	return IoOpType_IO_OP_UNSPECIFIED
 }
 
+// GetBytes returns the Bytes field.
 func (x *RaidOp) GetBytes() uint64 {
 	if x != nil {
 		return x.Bytes
@@ -433,6 +484,7 @@ func (x *RaidOp) GetBytes() uint64 {
 	return 0
 }
 
+// GetLatencySeconds returns the LatencySeconds field.
 func (x *RaidOp) GetLatencySeconds() float64 {
 	if x != nil {
 		return x.LatencySeconds
@@ -440,6 +492,7 @@ func (x *RaidOp) GetLatencySeconds() float64 {
 	return 0
 }
 
+// GetError returns the Error field.
 func (x *RaidOp) GetError() bool {
 	if x != nil {
 		return x.Error
@@ -447,6 +500,7 @@ func (x *RaidOp) GetError() bool {
 	return false
 }
 
+// GetServedFromDiskId returns the ServedFromDiskId field.
 func (x *RaidOp) GetServedFromDiskId() string {
 	if x != nil {
 		return x.ServedFromDiskId
@@ -454,6 +508,7 @@ func (x *RaidOp) GetServedFromDiskId() string {
 	return ""
 }
 
+// GetRaid3ParityRead returns the Raid3ParityRead field.
 func (x *RaidOp) GetRaid3ParityRead() bool {
 	if x != nil {
 		return x.Raid3ParityRead
@@ -461,6 +516,7 @@ func (x *RaidOp) GetRaid3ParityRead() bool {
 	return false
 }
 
+// GetRaid3ParityWrite returns the Raid3ParityWrite field.
 func (x *RaidOp) GetRaid3ParityWrite() bool {
 	if x != nil {
 		return x.Raid3ParityWrite
@@ -468,6 +524,7 @@ func (x *RaidOp) GetRaid3ParityWrite() bool {
 	return false
 }
 
+// GetRaid3PartialStripeWrite returns the Raid3PartialStripeWrite field.
 func (x *RaidOp) GetRaid3PartialStripeWrite() bool {
 	if x != nil {
 		return x.Raid3PartialStripeWrite
@@ -475,6 +532,7 @@ func (x *RaidOp) GetRaid3PartialStripeWrite() bool {
 	return false
 }
 
+// RaidState captures a point-in-time RAID state sample.
 type RaidState struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	RaidId string                 `protobuf:"bytes,1,opt,name=raid_id,json=raidId,proto3" json:"raid_id,omitempty"`
@@ -488,6 +546,7 @@ type RaidState struct {
 	sizeCache         protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *RaidState) Reset() {
 	*x = RaidState{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[4]
@@ -495,12 +554,15 @@ func (x *RaidState) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *RaidState) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*RaidState) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *RaidState) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[4]
 	if x != nil {
@@ -513,11 +575,12 @@ func (x *RaidState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RaidState.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use RaidState.ProtoReflect.Descriptor instead.
 func (*RaidState) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{4}
 }
 
+// GetRaidId returns the RaidId field.
 func (x *RaidState) GetRaidId() string {
 	if x != nil {
 		return x.RaidId
@@ -525,6 +588,7 @@ func (x *RaidState) GetRaidId() string {
 	return ""
 }
 
+// GetRaid1ResyncProgress returns the Raid1ResyncProgress field.
 func (x *RaidState) GetRaid1ResyncProgress() float64 {
 	if x != nil {
 		return x.Raid1ResyncProgress
@@ -532,6 +596,7 @@ func (x *RaidState) GetRaid1ResyncProgress() float64 {
 	return 0
 }
 
+// GetDegraded returns the Degraded field.
 func (x *RaidState) GetDegraded() bool {
 	if x != nil {
 		return x.Degraded
@@ -539,6 +604,7 @@ func (x *RaidState) GetDegraded() bool {
 	return false
 }
 
+// GetFailedDisks returns the FailedDisks field.
 func (x *RaidState) GetFailedDisks() uint32 {
 	if x != nil {
 		return x.FailedDisks
@@ -546,6 +612,7 @@ func (x *RaidState) GetFailedDisks() uint32 {
 	return 0
 }
 
+// GetRebuildInProgress returns the RebuildInProgress field.
 func (x *RaidState) GetRebuildInProgress() bool {
 	if x != nil {
 		return x.RebuildInProgress
@@ -553,6 +620,7 @@ func (x *RaidState) GetRebuildInProgress() bool {
 	return false
 }
 
+// FuseOp represents a single FUSE operation sample.
 type FuseOp struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Op             FuseOpType             `protobuf:"varint,1,opt,name=op,proto3,enum=metrics.v1.FuseOpType" json:"op,omitempty"`
@@ -563,6 +631,7 @@ type FuseOp struct {
 	sizeCache      protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *FuseOp) Reset() {
 	*x = FuseOp{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[5]
@@ -570,12 +639,15 @@ func (x *FuseOp) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *FuseOp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*FuseOp) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *FuseOp) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[5]
 	if x != nil {
@@ -588,11 +660,12 @@ func (x *FuseOp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FuseOp.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use FuseOp.ProtoReflect.Descriptor instead.
 func (*FuseOp) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{5}
 }
 
+// GetOp returns the Op field.
 func (x *FuseOp) GetOp() FuseOpType {
 	if x != nil {
 		return x.Op
@@ -600,6 +673,7 @@ func (x *FuseOp) GetOp() FuseOpType {
 	return FuseOpType_FUSE_OP_UNSPECIFIED
 }
 
+// GetBytes returns the Bytes field.
 func (x *FuseOp) GetBytes() uint64 {
 	if x != nil {
 		return x.Bytes
@@ -607,6 +681,7 @@ func (x *FuseOp) GetBytes() uint64 {
 	return 0
 }
 
+// GetLatencySeconds returns the LatencySeconds field.
 func (x *FuseOp) GetLatencySeconds() float64 {
 	if x != nil {
 		return x.LatencySeconds
@@ -614,6 +689,7 @@ func (x *FuseOp) GetLatencySeconds() float64 {
 	return 0
 }
 
+// GetError returns the Error field.
 func (x *FuseOp) GetError() bool {
 	if x != nil {
 		return x.Error
@@ -622,6 +698,7 @@ func (x *FuseOp) GetError() bool {
 }
 
 // ----- PROCESS -----
+// ProcessSample records process-level metrics for the simulator.
 type ProcessSample struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	CpuSeconds          float64                `protobuf:"fixed64,1,opt,name=cpu_seconds,json=cpuSeconds,proto3" json:"cpu_seconds,omitempty"`                             // gauge
@@ -630,6 +707,7 @@ type ProcessSample struct {
 	sizeCache           protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *ProcessSample) Reset() {
 	*x = ProcessSample{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[6]
@@ -637,12 +715,15 @@ func (x *ProcessSample) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *ProcessSample) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*ProcessSample) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *ProcessSample) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[6]
 	if x != nil {
@@ -655,11 +736,12 @@ func (x *ProcessSample) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ProcessSample.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use ProcessSample.ProtoReflect.Descriptor instead.
 func (*ProcessSample) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{6}
 }
 
+// GetCpuSeconds returns the CpuSeconds field.
 func (x *ProcessSample) GetCpuSeconds() float64 {
 	if x != nil {
 		return x.CpuSeconds
@@ -667,6 +749,7 @@ func (x *ProcessSample) GetCpuSeconds() float64 {
 	return 0
 }
 
+// GetResidentMemoryBytes returns the ResidentMemoryBytes field.
 func (x *ProcessSample) GetResidentMemoryBytes() uint64 {
 	if x != nil {
 		return x.ResidentMemoryBytes
@@ -674,6 +757,7 @@ func (x *ProcessSample) GetResidentMemoryBytes() uint64 {
 	return 0
 }
 
+// PushResponse summarizes the ingestion results for a streamed push.
 type PushResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	AcceptedBatches uint64                 `protobuf:"varint,1,opt,name=accepted_batches,json=acceptedBatches,proto3" json:"accepted_batches,omitempty"`
@@ -683,6 +767,7 @@ type PushResponse struct {
 	sizeCache       protoimpl.SizeCache
 }
 
+// Reset resets the message to its zero value.
 func (x *PushResponse) Reset() {
 	*x = PushResponse{}
 	mi := &file_metrics_v1_ingest_proto_msgTypes[7]
@@ -690,12 +775,15 @@ func (x *PushResponse) Reset() {
 	ms.StoreMessageInfo(mi)
 }
 
+// String returns the string representation of the value.
 func (x *PushResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage marks the type as a protobuf message.
 func (*PushResponse) ProtoMessage() {}
 
+// ProtoReflect returns the reflective view of the message.
 func (x *PushResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_v1_ingest_proto_msgTypes[7]
 	if x != nil {
@@ -708,11 +796,12 @@ func (x *PushResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PushResponse.ProtoReflect.Descriptor instead.
+// Descriptor returns the legacy message descriptor. Deprecated: Use PushResponse.ProtoReflect.Descriptor instead.
 func (*PushResponse) Descriptor() ([]byte, []int) {
 	return file_metrics_v1_ingest_proto_rawDescGZIP(), []int{7}
 }
 
+// GetAcceptedBatches returns the AcceptedBatches field.
 func (x *PushResponse) GetAcceptedBatches() uint64 {
 	if x != nil {
 		return x.AcceptedBatches
@@ -720,6 +809,7 @@ func (x *PushResponse) GetAcceptedBatches() uint64 {
 	return 0
 }
 
+// GetAcceptedSamples returns the AcceptedSamples field.
 func (x *PushResponse) GetAcceptedSamples() uint64 {
 	if x != nil {
 		return x.AcceptedSamples
@@ -727,6 +817,7 @@ func (x *PushResponse) GetAcceptedSamples() uint64 {
 	return 0
 }
 
+// GetRejectedSamples returns the RejectedSamples field.
 func (x *PushResponse) GetRejectedSamples() uint64 {
 	if x != nil {
 		return x.RejectedSamples
