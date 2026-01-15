@@ -79,6 +79,7 @@ fi
 echo "[rust-runtime-image] Building new immutable runtime image..."
 docker build --pull \
   --build-arg RUST_VERSION="$CI_RUST_VERSION" \
+  --build-arg CARGO_AUDIT_VERSION="latest" \
   -f .gitlab/ci/images/rust-runtime/Dockerfile \
   -t "$IMMUTABLE_TAG" \
   .gitlab/ci/images/rust-runtime
