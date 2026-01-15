@@ -8,27 +8,17 @@ use crate::fs::persist::save_header_and_entry;
 
 use super::types::RaidFs;
 
+enum InodeTarget {
+    Root,
+    Control,
+    Entry(usize),
+}
+
 impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     pub(crate) fn op_access(&self, _req: &Request<'_>, ino: u64, _mask: i32, reply: ReplyEmpty) {
-        if ino == ROOT_ID || ino == CTL_INO {
-            reply.ok();
-            return;
-        }
-
-        let Some(index) = Self::index_for_inode(ino) else {
-            reply.error(libc::ENOENT);
-            return;
-        };
-
-        let Ok(state) = self.state.lock() else {
-            reply.error(libc::EIO);
-            return;
-        };
-
-        if state.entries.get(index).is_some_and(|entry| entry.used) {
-            reply.ok();
-        } else {
-            reply.error(libc::ENOENT);
+        match self.resolve_inode(ino) {
+            Ok(_) => reply.ok(),
+            Err(code) => reply.error(code),
         }
     }
 
@@ -40,7 +30,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         size: u32,
         reply: ReplyXattr,
     ) {
-        if ino != ROOT_ID && ino != CTL_INO && Self::index_for_inode(ino).is_none() {
+        if !Self::is_inode_in_range(ino) {
             reply.error(libc::ENOENT);
             return;
         }
@@ -59,30 +49,21 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _fh: Option<u64>,
         reply: ReplyAttr,
     ) {
-        if ino == ROOT_ID {
-            reply.attr(&TTL, &self.root_attr());
-            return;
-        }
-
-        if ino == CTL_INO {
-            reply.attr(&TTL, &self.ctl_attr());
-            return;
-        }
-
-        let Some(index) = Self::index_for_inode(ino) else {
-            reply.error(libc::ENOENT);
-            return;
-        };
-
-        let Ok(state) = self.state.lock() else {
-            reply.error(libc::EIO);
-            return;
-        };
-
-        if let Some(entry) = state.entries.get(index).filter(|entry| entry.used) {
-            reply.attr(&TTL, &self.entry_attr(index, entry.size));
-        } else {
-            reply.error(libc::ENOENT);
+        match self.resolve_inode(ino) {
+            Ok(InodeTarget::Root) => reply.attr(&TTL, &self.root_attr()),
+            Ok(InodeTarget::Control) => reply.attr(&TTL, &self.ctl_attr()),
+            Ok(InodeTarget::Entry(index)) => {
+                let Ok(state) = self.state.lock() else {
+                    reply.error(libc::EIO);
+                    return;
+                };
+                if let Some(entry) = state.entries.get(index).filter(|entry| entry.used) {
+                    reply.attr(&TTL, &self.entry_attr(index, entry.size));
+                } else {
+                    reply.error(libc::ENOENT);
+                }
+            }
+            Err(code) => reply.error(code),
         }
     }
 
@@ -174,5 +155,86 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             NAME_LEN as u32,
             STATFS_BLOCK_SIZE,
         );
+    }
+
+    fn resolve_inode(&self, ino: u64) -> Result<InodeTarget, i32> {
+        if ino == ROOT_ID {
+            return Ok(InodeTarget::Root);
+        }
+        if ino == CTL_INO {
+            return Ok(InodeTarget::Control);
+        }
+
+        let Some(index) = Self::index_for_inode(ino) else {
+            return Err(libc::ENOENT);
+        };
+
+        let Ok(state) = self.state.lock() else {
+            return Err(libc::EIO);
+        };
+
+        if state.entries.get(index).is_some_and(|entry| entry.used) {
+            Ok(InodeTarget::Entry(index))
+        } else {
+            Err(libc::ENOENT)
+        }
+    }
+
+    fn is_inode_in_range(ino: u64) -> bool {
+        ino == ROOT_ID || ino == CTL_INO || Self::index_for_inode(ino).is_some()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::DEFAULT_CHUNK_SIZE;
+    use crate::fs::test_utils::TestStripe;
+    use crate::fs::test_utils::create_test_fs;
+
+    #[test]
+    fn resolve_inode_recognizes_root_ctl_and_entries() {
+        let fs = create_test_fs();
+        {
+            let mut state = fs.state.lock().expect("state lock");
+            state.entries[0].used = true;
+            state.entries[0].size = 1;
+        }
+
+        assert!(matches!(fs.resolve_inode(ROOT_ID), Ok(InodeTarget::Root)));
+        assert!(matches!(
+            fs.resolve_inode(CTL_INO),
+            Ok(InodeTarget::Control)
+        ));
+        assert!(matches!(
+            fs.resolve_inode(RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::inode_for(
+                0
+            )),
+            Ok(InodeTarget::Entry(0))
+        ));
+        assert!(fs.resolve_inode(999_999).is_err());
+    }
+
+    #[test]
+    fn resolve_inode_rejects_unused_entries() {
+        let fs = create_test_fs();
+        let ino = RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::inode_for(0);
+        assert!(matches!(fs.resolve_inode(ino), Err(libc::ENOENT)));
+    }
+
+    #[test]
+    fn inode_range_checks_root_ctl_and_entries() {
+        assert!(RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::is_inode_in_range(ROOT_ID));
+        assert!(RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::is_inode_in_range(CTL_INO));
+        assert!(
+            RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::is_inode_in_range(RaidFs::<
+                1,
+                { DEFAULT_CHUNK_SIZE },
+                TestStripe,
+            >::inode_for(
+                0
+            ))
+        );
+        assert!(!RaidFs::<1, { DEFAULT_CHUNK_SIZE }, TestStripe>::is_inode_in_range(999_999));
     }
 }

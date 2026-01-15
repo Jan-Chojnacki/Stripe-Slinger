@@ -321,3 +321,20 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         metrics.record_raid_state(failed_disks, rebuild_in_progress, progress);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::DEFAULT_CHUNK_SIZE;
+    use crate::fs::test_utils::TestStripe;
+
+    type TestFs = RaidFs<1, { DEFAULT_CHUNK_SIZE }, TestStripe>;
+
+    #[test]
+    fn write_len_clamps_to_u32() {
+        assert_eq!(TestFs::write_len(0), 0);
+        assert_eq!(TestFs::write_len(1), 1);
+        assert_eq!(TestFs::write_len(u32::MAX as usize), u32::MAX);
+        assert_eq!(TestFs::write_len((u32::MAX as usize) + 10), u32::MAX);
+    }
+}

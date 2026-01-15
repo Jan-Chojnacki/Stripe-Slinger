@@ -214,3 +214,28 @@ pub fn run_fuse<const D: usize, const N: usize>(
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_dir(prefix: &str) -> std::path::PathBuf {
+        let mut dir = std::env::temp_dir();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        dir.push(format!("{prefix}-{}-{}", std::process::id(), nanos));
+        dir
+    }
+
+    #[test]
+    fn disk_paths_build_expected_names() {
+        let dir = temp_dir("raid-cli-disks");
+        let paths = disk_paths::<3>(&dir).expect("paths");
+        assert!(paths[0].ends_with("disk-0.img"));
+        assert!(paths[1].ends_with("disk-1.img"));
+        assert!(paths[2].ends_with("disk-2.img"));
+    }
+}

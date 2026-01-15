@@ -327,3 +327,65 @@ async fn sigterm() {
     let mut s = signal(SignalKind::terminate()).expect("install SIGTERM handler");
     s.recv().await;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::{FuseArgs, MetricsArgs, RaidMode};
+    use std::path::PathBuf;
+
+    fn test_metrics_args() -> MetricsArgs {
+        MetricsArgs {
+            socket_path: "/tmp/metrics.sock".to_string(),
+            source_id: "raid-cli-test".to_string(),
+            interval_ms: 1000,
+            ops_per_tick: 1,
+            queue_cap: 1,
+            conn_buffer: 1,
+            connect_timeout_ms: 1,
+            rpc_timeout_ms: 0,
+            backoff_initial_ms: 1,
+            backoff_max_ms: 10,
+            jitter_ratio: 0.0,
+            shutdown_grace_ms: 1,
+            auth_token: String::new(),
+        }
+    }
+
+    #[test]
+    fn run_fuse_command_rejects_single_disk_non_raid0() {
+        let (tx, _rx) = mpsc::channel(1);
+        let metrics = MetricsEmitter::new("raid1".to_string(), tx);
+        let args = FuseArgs {
+            mount_point: PathBuf::from("/tmp/mount"),
+            disk_dir: PathBuf::from("/tmp/disks"),
+            raid: RaidMode::Raid1,
+            disks: 1,
+            disk_size: 10,
+            metrics: test_metrics_args(),
+        };
+
+        let err = run_fuse_command(args, metrics).expect_err("expected error");
+        assert!(
+            err.to_string()
+                .contains("raid mode requires at least 2 disks")
+        );
+    }
+
+    #[test]
+    fn run_fuse_command_rejects_too_many_disks() {
+        let (tx, _rx) = mpsc::channel(1);
+        let metrics = MetricsEmitter::new("raid0".to_string(), tx);
+        let args = FuseArgs {
+            mount_point: PathBuf::from("/tmp/mount"),
+            disk_dir: PathBuf::from("/tmp/disks"),
+            raid: RaidMode::Raid0,
+            disks: 9,
+            disk_size: 10,
+            metrics: test_metrics_args(),
+        };
+
+        let err = run_fuse_command(args, metrics).expect_err("expected error");
+        assert!(err.to_string().contains("unsupported disk count 9"));
+    }
+}

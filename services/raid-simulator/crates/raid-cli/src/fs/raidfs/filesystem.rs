@@ -167,3 +167,16 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Filesystem for RaidFs<D, N
         self.op_statfs(req, ino, reply);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::DEFAULT_CHUNK_SIZE;
+    use crate::fs::test_utils::TestStripe;
+
+    #[test]
+    fn raidfs_implements_filesystem() {
+        fn assert_impl<T: Filesystem>() {}
+        assert_impl::<RaidFs<1, { DEFAULT_CHUNK_SIZE }, TestStripe>>();
+    }
+}

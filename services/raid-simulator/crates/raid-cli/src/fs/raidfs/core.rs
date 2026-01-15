@@ -124,3 +124,62 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::test_utils::TestStripe;
+
+    type TestFs = RaidFs<1, { crate::fs::DEFAULT_CHUNK_SIZE }, TestStripe>;
+
+    #[test]
+    fn header_bytes_round_trip() {
+        let header = Header { next_free: 123 };
+        let bytes = TestFs::header_bytes(&header);
+        let parsed = TestFs::parse_header(&bytes).expect("parse header");
+        assert_eq!(parsed.next_free, 123);
+    }
+
+    #[test]
+    fn header_parse_rejects_bad_magic() {
+        let mut bytes = [0u8; HEADER_SIZE];
+        bytes[0..8].copy_from_slice(b"BADMAGIC");
+        assert!(TestFs::parse_header(&bytes).is_none());
+    }
+
+    #[test]
+    fn header_parse_rejects_bad_version() {
+        let mut bytes = TestFs::header_bytes(&Header { next_free: 0 });
+        bytes[8] = VERSION.saturating_add(1);
+        assert!(TestFs::parse_header(&bytes).is_none());
+    }
+
+    #[test]
+    fn header_parse_rejects_bad_max_files() {
+        let mut bytes = TestFs::header_bytes(&Header { next_free: 0 });
+        bytes[24..28].copy_from_slice(&(MAX_FILES as u32 + 1).to_le_bytes());
+        assert!(TestFs::parse_header(&bytes).is_none());
+    }
+
+    #[test]
+    fn header_parse_rejects_short_buffer() {
+        let bytes = [0u8; HEADER_SIZE - 1];
+        assert!(TestFs::parse_header(&bytes).is_none());
+    }
+
+    #[test]
+    fn inode_mapping_round_trips() {
+        let ino = TestFs::inode_for(5);
+        assert_eq!(TestFs::index_for_inode(ino), Some(5));
+        assert_eq!(TestFs::index_for_inode(FILE_ID_BASE - 1), None);
+    }
+
+    #[test]
+    fn valid_name_rejects_paths() {
+        assert!(!TestFs::is_valid_name(OsStr::new("")));
+        assert!(!TestFs::is_valid_name(OsStr::new(".")));
+        assert!(!TestFs::is_valid_name(OsStr::new("..")));
+        assert!(!TestFs::is_valid_name(OsStr::new("a/b")));
+        assert!(TestFs::is_valid_name(OsStr::new("file.txt")));
+    }
+}

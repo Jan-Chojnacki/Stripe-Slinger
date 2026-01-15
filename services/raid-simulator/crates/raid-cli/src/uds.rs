@@ -35,3 +35,21 @@ pub async fn connect_uds(
 
     Ok(channel)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn connect_uds_errors_for_missing_socket() {
+        let err = connect_uds(
+            "/tmp/raid-cli-missing.sock",
+            Duration::from_millis(10),
+            None,
+        )
+        .await
+        .expect_err("expected error");
+        let msg = format!("{err:#}");
+        assert!(msg.contains("connect to UDS"));
+    }
+}

@@ -235,3 +235,107 @@ fn now_ts() -> Timestamp {
         nanos: i32::try_from(dur.subsec_nanos()).unwrap_or(i32::MAX),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::SeedableRng;
+
+    fn seeded_simulator(disk_ids: Vec<String>, raid_ids: Vec<String>) -> SyntheticSimulator {
+        let exp_disk = Exp::new(1.0 / 0.002).unwrap();
+        let exp_raid = Exp::new(1.0 / 0.003).unwrap();
+        let exp_fuse = Exp::new(1.0 / 0.0015).unwrap();
+
+        SyntheticSimulator {
+            rng: StdRng::seed_from_u64(42),
+            disk_ids,
+            raid_ids,
+            exp_disk,
+            exp_raid,
+            exp_fuse,
+            cpu_seconds: 0.0,
+        }
+    }
+
+    #[test]
+    fn next_batch_tracks_counts_and_metadata() {
+        let disk_ids = vec!["disk0".to_string(), "disk1".to_string()];
+        let raid_ids = vec!["raid0".to_string(), "raid1".to_string()];
+        let mut sim = seeded_simulator(disk_ids.clone(), raid_ids.clone());
+
+        let batch = sim.next_batch("source-a", 7, 5);
+
+        assert_eq!(batch.source_id, "source-a");
+        assert_eq!(batch.seq_no, 7);
+        assert_eq!(batch.disk_states.len(), disk_ids.len());
+        assert_eq!(batch.raid_states.len(), raid_ids.len());
+        assert_eq!(batch.disk_ops.len(), 5);
+        assert_eq!(batch.raid_ops.len(), 5);
+        assert_eq!(batch.fuse_ops.len(), 5);
+
+        let disk_set: std::collections::HashSet<_> = disk_ids.iter().cloned().collect();
+        let raid_set: std::collections::HashSet<_> = raid_ids.iter().cloned().collect();
+        for op in &batch.disk_ops {
+            assert!(disk_set.contains(&op.disk_id));
+        }
+        for state in &batch.disk_states {
+            assert!(disk_set.contains(&state.disk_id));
+        }
+        for op in &batch.raid_ops {
+            assert!(raid_set.contains(&op.raid_id));
+        }
+        for state in &batch.raid_states {
+            assert!(raid_set.contains(&state.raid_id));
+        }
+
+        let process = batch.process.expect("process sample");
+        assert!(process.cpu_seconds > 0.0);
+        assert!(process.resident_memory_bytes > 0);
+    }
+
+    #[test]
+    fn next_batch_respects_raid1_resync_behavior() {
+        let disk_ids = vec![
+            "disk0".to_string(),
+            "disk1".to_string(),
+            "disk2".to_string(),
+        ];
+        let raid_ids = vec![
+            "raid0".to_string(),
+            "raid1".to_string(),
+            "raid3".to_string(),
+        ];
+        let mut sim = seeded_simulator(disk_ids, raid_ids);
+
+        let batch = sim.next_batch("source-b", 1, 3);
+        for state in batch.raid_states {
+            if state.raid_id == "raid1" {
+                assert!((0.0..=1.0).contains(&state.raid1_resync_progress));
+            } else {
+                assert_eq!(state.raid1_resync_progress, 0.0);
+            }
+        }
+    }
+
+    #[test]
+    fn sampled_values_stay_within_expected_ranges() {
+        let disk_ids = vec!["disk0".to_string(), "disk1".to_string()];
+        let raid_ids = vec!["raid0".to_string()];
+        let mut sim = seeded_simulator(disk_ids, raid_ids);
+
+        for _ in 0..100 {
+            let disk_latency = sim.sample_disk_latency(0.05);
+            assert!((0.0..=0.05).contains(&disk_latency));
+            let raid_latency = sim.sample_raid_latency(0.08);
+            assert!((0.0..=0.08).contains(&raid_latency));
+            let fuse_latency = sim.sample_fuse_latency(0.03);
+            assert!((0.0..=0.03).contains(&fuse_latency));
+
+            let bytes = sim.pick_bytes();
+            assert!(matches!(
+                bytes,
+                4096 | 8192 | 16384 | 32768 | 65536 | 131_072 | 262_144
+            ));
+        }
+    }
+}

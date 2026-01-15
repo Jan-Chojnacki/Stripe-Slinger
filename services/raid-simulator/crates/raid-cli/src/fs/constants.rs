@@ -18,3 +18,18 @@ pub const STATFS_BLOCK_SIZE: u32 = 512;
 pub const CTL_NAME: &str = ".raidctl";
 pub const CTL_INO: u64 = FILE_ID_BASE + (MAX_FILES as u64) + 1;
 pub const CTL_SIZE: u64 = 4096;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn table_size_is_consistent() {
+        assert_eq!(TABLE_SIZE, HEADER_SIZE + (ENTRY_SIZE * MAX_FILES));
+    }
+
+    #[test]
+    fn ctl_inode_is_after_file_range() {
+        assert_eq!(CTL_INO, FILE_ID_BASE + (MAX_FILES as u64) + 1);
+    }
+}

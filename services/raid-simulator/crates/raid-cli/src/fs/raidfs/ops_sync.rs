@@ -15,7 +15,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _lock_owner: u64,
         reply: ReplyEmpty,
     ) {
-        if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
+        if Self::is_known_inode(ino) {
             reply.ok();
         } else {
             reply.error(libc::ENOENT);
@@ -32,7 +32,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
         _flush: bool,
         reply: ReplyEmpty,
     ) {
-        if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
+        if Self::is_known_inode(ino) {
             reply.ok();
         } else {
             reply.error(libc::ENOENT);
@@ -49,7 +49,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     ) {
         let start = Instant::now();
         let mut error = false;
-        if ino == CTL_INO || Self::index_for_inode(ino).is_some() {
+        if Self::is_known_inode(ino) {
             reply.ok();
         } else {
             reply.error(libc::ENOENT);
@@ -63,5 +63,25 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                 error,
             });
         }
+    }
+
+    fn is_known_inode(ino: u64) -> bool {
+        ino == CTL_INO || Self::index_for_inode(ino).is_some()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::DEFAULT_CHUNK_SIZE;
+    use crate::fs::test_utils::TestStripe;
+
+    type TestFs = RaidFs<1, { DEFAULT_CHUNK_SIZE }, TestStripe>;
+
+    #[test]
+    fn known_inode_checks_ctl_and_entries() {
+        assert!(TestFs::is_known_inode(CTL_INO));
+        assert!(TestFs::is_known_inode(TestFs::inode_for(0)));
+        assert!(!TestFs::is_known_inode(999_999));
     }
 }

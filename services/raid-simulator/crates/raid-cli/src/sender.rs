@@ -220,3 +220,23 @@ fn with_jitter(base: Duration, ratio: f64, rng: &mut StdRng) -> Duration {
     let extra = ((base_ms as f64) * ratio * rng.random::<f64>()).max(0.0) as u64;
     Duration::from_millis(base_ms.saturating_add(extra))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bump_backoff_doubles_until_max() {
+        let cur = Duration::from_millis(100);
+        let max = Duration::from_millis(500);
+        assert_eq!(bump_backoff(cur, max), Duration::from_millis(200));
+        assert_eq!(bump_backoff(Duration::from_millis(400), max), max);
+    }
+
+    #[test]
+    fn with_jitter_respects_zero_ratio() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let base = Duration::from_millis(100);
+        assert_eq!(with_jitter(base, 0.0, &mut rng), base);
+    }
+}

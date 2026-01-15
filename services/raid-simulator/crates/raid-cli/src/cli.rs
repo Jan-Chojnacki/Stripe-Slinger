@@ -85,9 +85,155 @@ pub struct MetricsArgs {
     pub auth_token: String,
 }
 
-#[derive(Copy, Clone, Debug, ValueEnum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 pub enum RaidMode {
     Raid0,
     Raid1,
     Raid3,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct EnvGuard {
+        key: &'static str,
+        previous: Option<String>,
+    }
+
+    impl EnvGuard {
+        fn set(key: &'static str, value: &str) -> Self {
+            let previous = std::env::var(key).ok();
+            unsafe {
+                std::env::set_var(key, value);
+            }
+            Self { key, previous }
+        }
+
+        fn clear(key: &'static str) -> Self {
+            let previous = std::env::var(key).ok();
+            unsafe {
+                std::env::remove_var(key);
+            }
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            if let Some(value) = &self.previous {
+                unsafe {
+                    std::env::set_var(self.key, value);
+                }
+            } else {
+                unsafe {
+                    std::env::remove_var(self.key);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn parses_fuse_defaults() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _socket = EnvGuard::clear("METRICS_SOCKET_PATH");
+        let _source = EnvGuard::clear("METRICS_SOURCE_ID");
+        let _interval = EnvGuard::clear("METRICS_INTERVAL_MS");
+        let _ops = EnvGuard::clear("METRICS_OPS_PER_TICK");
+        let _queue = EnvGuard::clear("METRICS_QUEUE_CAP");
+        let _conn = EnvGuard::clear("METRICS_CONN_BUFFER");
+        let _connect = EnvGuard::clear("METRICS_CONNECT_TIMEOUT_MS");
+        let _rpc = EnvGuard::clear("METRICS_RPC_TIMEOUT_MS");
+        let _backoff_initial = EnvGuard::clear("METRICS_BACKOFF_INITIAL_MS");
+        let _backoff_max = EnvGuard::clear("METRICS_BACKOFF_MAX_MS");
+        let _jitter = EnvGuard::clear("METRICS_JITTER_RATIO");
+        let _shutdown = EnvGuard::clear("METRICS_SHUTDOWN_GRACE_MS");
+        let _auth = EnvGuard::clear("METRICS_AUTH_TOKEN");
+
+        let cli = Cli::parse_from([
+            "raid-cli",
+            "fuse",
+            "--mount-point",
+            "/mnt/raid",
+            "--disk-dir",
+            "/var/raid",
+        ]);
+
+        let Command::Fuse(args) = cli.command else {
+            panic!("expected fuse command");
+        };
+
+        assert_eq!(args.raid, RaidMode::Raid0);
+        assert_eq!(args.disks, 3);
+        assert_eq!(args.disk_size, DEFAULT_DISK_LEN);
+        assert_eq!(args.metrics.interval_ms, 1000);
+        assert_eq!(args.metrics.ops_per_tick, 200);
+        assert_eq!(args.metrics.queue_cap, 2048);
+    }
+
+    #[test]
+    fn parses_metrics_with_env_overrides() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _socket = EnvGuard::set("METRICS_SOCKET_PATH", "/tmp/metrics.sock");
+        let _source = EnvGuard::set("METRICS_SOURCE_ID", "raid-test");
+        let _interval = EnvGuard::set("METRICS_INTERVAL_MS", "150");
+        let _ops = EnvGuard::set("METRICS_OPS_PER_TICK", "42");
+        let _queue = EnvGuard::set("METRICS_QUEUE_CAP", "64");
+        let _conn = EnvGuard::set("METRICS_CONN_BUFFER", "7");
+        let _connect = EnvGuard::set("METRICS_CONNECT_TIMEOUT_MS", "300");
+        let _rpc = EnvGuard::set("METRICS_RPC_TIMEOUT_MS", "250");
+        let _backoff_initial = EnvGuard::set("METRICS_BACKOFF_INITIAL_MS", "10");
+        let _backoff_max = EnvGuard::set("METRICS_BACKOFF_MAX_MS", "900");
+        let _jitter = EnvGuard::set("METRICS_JITTER_RATIO", "0.7");
+        let _shutdown = EnvGuard::set("METRICS_SHUTDOWN_GRACE_MS", "800");
+        let _auth = EnvGuard::set("METRICS_AUTH_TOKEN", "token");
+
+        let cli = Cli::parse_from(["raid-cli", "metrics"]);
+        let Command::Metrics(args) = cli.command else {
+            panic!("expected metrics command");
+        };
+
+        assert_eq!(args.socket_path, "/tmp/metrics.sock");
+        assert_eq!(args.source_id, "raid-test");
+        assert_eq!(args.interval_ms, 150);
+        assert_eq!(args.ops_per_tick, 42);
+        assert_eq!(args.queue_cap, 64);
+        assert_eq!(args.conn_buffer, 7);
+        assert_eq!(args.connect_timeout_ms, 300);
+        assert_eq!(args.rpc_timeout_ms, 250);
+        assert_eq!(args.backoff_initial_ms, 10);
+        assert_eq!(args.backoff_max_ms, 900);
+        assert!((args.jitter_ratio - 0.7).abs() < f64::EPSILON);
+        assert_eq!(args.shutdown_grace_ms, 800);
+        assert_eq!(args.auth_token, "token");
+    }
+
+    #[test]
+    fn parses_fuse_with_custom_raid_mode() {
+        let cli = Cli::parse_from([
+            "raid-cli",
+            "fuse",
+            "--mount-point",
+            "/mnt/raid",
+            "--disk-dir",
+            "/var/raid",
+            "--raid",
+            "raid1",
+            "--disks",
+            "2",
+            "--disk-size",
+            "2048",
+        ]);
+
+        let Command::Fuse(args) = cli.command else {
+            panic!("expected fuse command");
+        };
+
+        assert_eq!(args.raid, RaidMode::Raid1);
+        assert_eq!(args.disks, 2);
+        assert_eq!(args.disk_size, 2048);
+    }
 }

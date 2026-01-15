@@ -53,3 +53,39 @@ impl Entry {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn entry_round_trip_preserves_fields() {
+        let entry = Entry {
+            name: "alpha".to_string(),
+            offset: 10,
+            size: 20,
+            used: true,
+        };
+
+        let bytes = entry.to_bytes();
+        let decoded = Entry::from_bytes(&bytes);
+
+        assert_eq!(decoded.name, "alpha");
+        assert_eq!(decoded.offset, 10);
+        assert_eq!(decoded.size, 20);
+        assert!(decoded.used);
+    }
+
+    #[test]
+    fn entry_truncates_long_names() {
+        let entry = Entry {
+            name: "a".repeat(NAME_LEN + 10),
+            offset: 0,
+            size: 0,
+            used: true,
+        };
+        let bytes = entry.to_bytes();
+        let decoded = Entry::from_bytes(&bytes);
+        assert_eq!(decoded.name.len(), NAME_LEN);
+    }
+}
