@@ -2,14 +2,7 @@ FROM rust:1.91-bookworm AS build
 
 WORKDIR /src
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  protobuf-compiler \
-  libprotobuf-dev \
-  ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
 COPY api/proto ./api/proto
-
 COPY services/raid-simulator ./services/raid-simulator
 
 WORKDIR /src/services/raid-simulator
@@ -22,29 +15,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nfs-kernel-server \
   rpcbind \
   ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && sed -i 's/#user_allow_other/user_allow_other/' /etc/fuse.conf \
+  && mkdir -p /var/lib/nfs /var/run/rpcbind /run/sendsigs.omit.d \
+  && mkdir -p /mnt/raid /disks /sockets
 
-RUN set -eux; \
-  if [ -f /etc/fuse.conf ]; then \
-  sed -i 's/^[[:space:]]*#\?[[:space:]]*user_allow_other[[:space:]]*$/user_allow_other/' /etc/fuse.conf; \
-  grep -q '^user_allow_other$' /etc/fuse.conf || echo 'user_allow_other' >> /etc/fuse.conf; \
-  else \
-  echo 'user_allow_other' > /etc/fuse.conf; \
-  fi
-
-RUN set -eux; \
-  grep -qE '^nonroot:' /etc/group || echo 'nonroot:x:65532:' >> /etc/group; \
-  grep -qE '^nonroot:' /etc/passwd || echo 'nonroot:x:65532:65532:nonroot:/nonexistent:/usr/sbin/nologin' >> /etc/passwd; \
-  mkdir -p /mnt/raid /disks /sockets; \
-  chown -R 65532:65532 /mnt/raid /disks /sockets
-
-RUN mkdir -p /var/lib/nfs /var/run/rpcbind
-
-WORKDIR /app
 COPY --from=build /src/services/raid-simulator/target/release/raid-cli /usr/local/bin/raid-cli
-
 COPY services/raid-simulator/scripts/entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
 
-USER 0:0
+EXPOSE 2049/tcp
+
 ENTRYPOINT ["/entrypoint.sh"]

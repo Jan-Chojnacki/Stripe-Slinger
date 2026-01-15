@@ -3,25 +3,21 @@ services:
     image: busybox:1.36
     container_name: init-sockets
     user: "0:0"
-    command:
-      - sh
-      - -euxc
-      - |
-        mkdir -p /sockets
-        chmod 0770 /sockets
-        chown 65532:65532 /sockets
     volumes:
       - metrics-sockets:/sockets
+      - ./scripts/init-sockets.sh:/usr/local/bin/init-sockets.sh:ro
+    command: ["/bin/sh", "/usr/local/bin/init-sockets.sh"]
     restart: "no"
 
   metrics-gateway:
+    image: metrics-gateway:latest
+    container_name: metrics-gateway
     build:
       context: ..
       dockerfile: services/metrics-gateway/Dockerfile
-    image: metrics-gateway:latest
-    container_name: metrics-gateway
     depends_on:
-      - init-sockets
+      init-sockets:
+        condition: service_completed_successfully
     user: "65532:65532"
     env_file:
       - ../.env
@@ -35,13 +31,12 @@ services:
     restart: unless-stopped
 
   raid-simulator:
+    image: raid-simulator:latest
+    container_name: raid-simulator
     build:
       context: ..
       dockerfile: services/raid-simulator/Dockerfile
-    image: raid-simulator:latest
-    container_name: raid-simulator
     depends_on:
-      - init-sockets
       - metrics-gateway
     devices:
       - /dev/fuse:/dev/fuse
@@ -50,17 +45,14 @@ services:
       - NET_ADMIN
     security_opt:
       - apparmor:unconfined
-    # ZMIANA: Pobieramy konfigurację z głównego pliku .env w root
     env_file:
       - ../.env
     environment:
       - METRICS_SOCKET_PATH=/sockets/metrics-gateway.sock
-      # ZMIANA: Używamy zmiennych z .env zamiast wpisywać "raid3" na sztywno
       - RAID_LEVEL=${RAID_LEVEL:-raid3}
       - DISK_SIZE=${DISK_SIZE:-100000000}
     volumes:
       - metrics-sockets:/sockets
-      # ZMIANA: Lokalne dyski i mount point w folderze storage (ignorowanym przez git)
       - ../storage/raid-disks:/disks
       - ../storage/raid-mount:/mnt/raid
     ports:
