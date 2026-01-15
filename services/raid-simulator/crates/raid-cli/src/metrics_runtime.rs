@@ -353,3 +353,141 @@ fn timeval_to_secs(tv: libc::timeval) -> f64 {
     let micros = tv.tv_usec as f64 / 1_000_000.0;
     secs + micros
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use tokio::time::timeout;
+
+    #[tokio::test]
+    async fn metrics_emitter_records_disk_status_queue_depths() {
+        let (tx, mut rx) = mpsc::channel(10);
+        let emitter = MetricsEmitter::new("raid1".to_string(), tx);
+
+        emitter.record_disk_status(DiskStatus {
+            index: 0,
+            missing: true,
+            needs_rebuild: false,
+        });
+        emitter.record_disk_status(DiskStatus {
+            index: 1,
+            missing: false,
+            needs_rebuild: true,
+        });
+        emitter.record_disk_status(DiskStatus {
+            index: 2,
+            missing: false,
+            needs_rebuild: false,
+        });
+
+        let mut states = Vec::new();
+        for _ in 0..3 {
+            match rx.recv().await {
+                Some(MetricsEvent::DiskState(state)) => states.push(state),
+                other => panic!("expected DiskState event, got {other:?}"),
+            }
+        }
+
+        let mut queue_depths = HashMap::new();
+        for state in states {
+            queue_depths.insert(state.disk_id, state.queue_depth);
+        }
+
+        assert_eq!(queue_depths.get("disk0"), Some(&-1.0));
+        assert_eq!(queue_depths.get("disk1"), Some(&1.0));
+        assert_eq!(queue_depths.get("disk2"), Some(&0.0));
+    }
+
+    #[tokio::test]
+    async fn run_event_generator_batches_ops_and_states() {
+        let (batch_tx, mut batch_rx) = mpsc::channel(1);
+        let (shutdown_tx, shutdown_rx) = watch::channel(false);
+        let (event_tx, event_rx) = mpsc::channel(10);
+
+        let task = tokio::spawn(run_event_generator(
+            batch_tx,
+            shutdown_rx,
+            event_rx,
+            "source-1".to_string(),
+            Duration::from_millis(5),
+        ));
+
+        event_tx
+            .send(MetricsEvent::DiskOp(DiskOp {
+                disk_id: "disk0".to_string(),
+                op: IoOpType::Read,
+                bytes: 64,
+                latency_seconds: 0.02,
+                error: false,
+            }))
+            .await
+            .unwrap();
+        event_tx
+            .send(MetricsEvent::DiskState(metrics::DiskState {
+                disk_id: "disk1".to_string(),
+                queue_depth: 1.0,
+            }))
+            .await
+            .unwrap();
+        event_tx
+            .send(MetricsEvent::RaidOp {
+                raid_id: "raid1".to_string(),
+                op: RaidOp {
+                    op: IoOpType::Read,
+                    bytes: 12,
+                    latency_seconds: 0.25,
+                    error: false,
+                },
+            })
+            .await
+            .unwrap();
+        event_tx
+            .send(MetricsEvent::FuseOp(FuseOp {
+                op: FuseOpType::Write,
+                bytes: 128,
+                latency_seconds: 0.04,
+                error: true,
+            }))
+            .await
+            .unwrap();
+
+        let batch = timeout(Duration::from_millis(200), batch_rx.recv())
+            .await
+            .expect("batch send timeout")
+            .expect("batch missing");
+
+        assert_eq!(batch.source_id, "source-1");
+        assert_eq!(batch.seq_no, 1);
+        assert_eq!(batch.disk_ops.len(), 1);
+        assert_eq!(batch.raid_ops.len(), 1);
+        assert_eq!(batch.fuse_ops.len(), 1);
+
+        let mut disk_states = HashMap::new();
+        for state in batch.disk_states {
+            disk_states.insert(state.disk_id, state.queue_depth);
+        }
+        assert_eq!(disk_states.get("disk0"), Some(&0.0));
+        assert_eq!(disk_states.get("disk1"), Some(&1.0));
+
+        let raid_op = &batch.raid_ops[0];
+        assert_eq!(raid_op.raid_id, "raid1");
+        assert_eq!(raid_op.op, metrics::IoOpType::IoOpRead as i32);
+        assert_eq!(raid_op.bytes, 12);
+        assert_eq!(raid_op.latency_seconds, 0.25);
+        assert!(!raid_op.error);
+        assert_eq!(raid_op.served_from_disk_id, "");
+        assert!(!raid_op.raid3_parity_read);
+        assert!(!raid_op.raid3_parity_write);
+        assert!(!raid_op.raid3_partial_stripe_write);
+
+        let fuse_op = &batch.fuse_ops[0];
+        assert_eq!(fuse_op.op, metrics::FuseOpType::FuseOpWrite as i32);
+        assert_eq!(fuse_op.bytes, 128);
+        assert_eq!(fuse_op.latency_seconds, 0.04);
+        assert!(fuse_op.error);
+
+        let _ = shutdown_tx.send(true);
+        let _ = timeout(Duration::from_millis(200), task).await;
+    }
+}
