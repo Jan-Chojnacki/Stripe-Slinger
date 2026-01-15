@@ -29,12 +29,18 @@ echo "[rust-runtime-image] Calculated files hash: ${FILES_HASH}"
 echo "[rust-runtime-image] Logging in to registry..."
 echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY" >/dev/null
 
-echo "[rust-runtime-image] Probing base image digest..."
-docker pull "$RUNTIME_BASE_IMAGE" >/dev/null 2>&1 || true
-BASE_REPO_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$RUNTIME_BASE_IMAGE" 2>/dev/null || true)"
-BASE_DIGEST="${BASE_REPO_DIGEST##*@}"
-BASE_SHORT="$(printf '%s' "$BASE_DIGEST" | cut -c8-19)"
+echo "[rust-runtime-image] Probing base image digest (metadata only)..."
 
+BASE_DIGEST=$(docker manifest inspect "$RUNTIME_BASE_IMAGE" -v | grep "Descriptor" -A 5 | grep "digest" | head -n1 | cut -d'"' -f4 || echo "")
+
+if [ -z "$BASE_DIGEST" ]; then
+  echo "WARNING: Could not fetch digest via manifest inspect. Falling back to quick pull..."
+  docker pull "$RUNTIME_BASE_IMAGE" >/dev/null
+  BASE_REPO_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$RUNTIME_BASE_IMAGE" 2>/dev/null || true)"
+  BASE_DIGEST="${BASE_REPO_DIGEST##*@}"
+fi
+
+BASE_SHORT="$(printf '%s' "$BASE_DIGEST" | cut -c8-19)"
 KEY="$(printf '%s|%s|%s' "$CI_RUST_VERSION" "$BASE_DIGEST" "$FILES_HASH" | sha256sum | cut -c1-12)"
 IMMUTABLE_TAG="${RUNTIME_IMAGE_REPO}:${CI_RUST_VERSION}-${BASE_SHORT}-${KEY}"
 MOVING_TAG="${RUNTIME_IMAGE_REPO}:rust-${CI_RUST_VERSION}"
@@ -57,18 +63,16 @@ if [ "$IMM_EXISTS" = true ]; then
   echo "[rust-runtime-image] Immutable image already exists: ${IMMUTABLE_TAG}"
   MOV_DIGEST="$(manifest_digest "$MOVING_TAG" || true)"
   IMM_DIGEST="$(manifest_digest "$IMMUTABLE_TAG" || true)"
+
   if [ -n "${MOV_DIGEST:-}" ] && [ "$MOV_DIGEST" = "$IMM_DIGEST" ]; then
     echo "[rust-runtime-image] Moving tag already points to immutable image. Skipping build."
     exit 0
   fi
 
   echo "[rust-runtime-image] Retagging moving alias to existing immutable image..."
-  docker pull "$IMMUTABLE_TAG" >/dev/null 2>&1 || true
+  docker pull "$IMMUTABLE_TAG" >/dev/null
   docker tag "$IMMUTABLE_TAG" "$MOVING_TAG"
   docker push "$MOVING_TAG"
-
-  echo "[rust-runtime-image] Retagged moving alias to existing immutable image."
-  echo "[rust-runtime-image] Rust runtime image build step completed (no rebuild needed)."
   exit 0
 fi
 
@@ -86,5 +90,4 @@ echo "[rust-runtime-image] Tagging and pushing moving alias ${MOVING_TAG}..."
 docker tag "$IMMUTABLE_TAG" "$MOVING_TAG"
 docker push "$MOVING_TAG"
 
-echo "[rust-runtime-image] Pushed Rust runtime: ${IMMUTABLE_TAG} and updated moving tag ${MOVING_TAG}."
-echo "[rust-runtime-image] Rust runtime image build completed."
+echo "[rust-runtime-image] Build completed successfully."

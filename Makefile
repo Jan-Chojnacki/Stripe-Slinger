@@ -29,19 +29,19 @@ NC := \033[0m
 
 .DEFAULT_GOAL := help
 
-help: ## Show available commands
+help:
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-up: directories docker-up wait-for-nfs mount warm-up ## Start environment (Fast start)
+up: directories docker-up wait-for-nfs mount warm-up
 	@echo -e "$(GREEN)[INFO] Environment is fully operational on $(OS)!$(NC)"
 
-rebuild: directories docker-rebuild wait-for-nfs mount warm-up ## Rebuild images and start
+rebuild: directories docker-rebuild wait-for-nfs mount warm-up #
 	@echo -e "$(GREEN)[INFO] Environment rebuilt and started!$(NC)"
 
-down: unmount docker-down ## Stop environment
+down: unmount docker-down
 	@echo -e "$(GREEN)[INFO] Environment stopped.$(NC)"
 
-status: ## Check container and mount status
+status:
 	@echo -e "$(YELLOW)--- RAID MOUNT STATUS ---$(NC)"
 	@if mountpoint -q $(MOUNT_POINT); then \
 		echo -e "Mount: $(GREEN)[OK]$(NC) -> $(MOUNT_POINT)"; \
@@ -52,10 +52,10 @@ status: ## Check container and mount status
 	@echo -e "\n$(YELLOW)--- DOCKER STATUS ---$(NC)"
 	@docker compose -f $(COMPOSE_FILE) ps
 
-logs: ## Show container logs
+logs:
 	@docker compose -f $(COMPOSE_FILE) logs -f
 
-clean: unmount ## NUKE EVERYTHING (Down + Volumes + Orphans + Storage Data)
+clean: unmount 
 	@echo -e "$(RED)[DANGER] Performing HARD CLEANUP...$(NC)"
 	@docker compose -f $(COMPOSE_FILE) down --volumes --remove-orphans
 	@echo -e "$(RED)[DANGER] Wiping storage directories...$(NC)"
