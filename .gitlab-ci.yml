@@ -226,4 +226,3 @@ workflow:
     - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/
       when: always
     - when: never
-
