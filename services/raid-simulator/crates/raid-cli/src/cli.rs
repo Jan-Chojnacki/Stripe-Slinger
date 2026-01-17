@@ -42,6 +42,9 @@ pub struct FuseArgs {
 
     #[command(flatten)]
     pub metrics: MetricsArgs,
+
+    #[arg(long, default_value_t = false)]
+    pub allow_other: bool,
 }
 
 /// MetricsArgs configures metrics streaming options.

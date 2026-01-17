@@ -23,13 +23,15 @@ MOUNT_POINT="${MOUNT_POINT:-/mnt/raid}"
 
 rpcbind
 
+echo "user_allow_other" >> /etc/fuse.conf
+
 raid-cli fuse \
     --mount-point "$MOUNT_POINT" \
     --disk-dir "$DISK_DIR" \
     --raid "$RAID_LEVEL" \
     --disk-size "$DISK_SIZE" \
-    --auth-token "$AUTH_TOKEN" &
-FUSE_PID="$!"
+    --auth-token "$AUTH_TOKEN" \
+    --allow-other &
 
 echo "Waiting for FUSE mount at $MOUNT_POINT..."
 for _ in {1..50}; do

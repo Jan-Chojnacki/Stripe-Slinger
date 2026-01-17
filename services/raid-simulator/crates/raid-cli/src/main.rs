@@ -95,35 +95,36 @@ fn run_fuse_command(args: cli::FuseArgs, metrics: std::sync::Arc<MetricsEmitter>
         disks,
         disk_size,
         metrics: _,
+        allow_other
     } = args;
 
     let disk_size = disk_size.max(1);
 
     match (raid, disks) {
         (RaidMode::Raid0, 1) => {
-            run_fuse::<1, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<1, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 1) => Err(anyhow::anyhow!("raid mode requires at least 2 disks")),
         (_, 2) => {
-            run_fuse::<2, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<2, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 3) => {
-            run_fuse::<3, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<3, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 4) => {
-            run_fuse::<4, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<4, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 5) => {
-            run_fuse::<5, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<5, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 6) => {
-            run_fuse::<6, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<6, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 7) => {
-            run_fuse::<7, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<7, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         (_, 8) => {
-            run_fuse::<8, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics)
+            run_fuse::<8, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
         }
         _ => Err(anyhow::anyhow!(
             "unsupported disk count {disks}; supported range is 1-8"

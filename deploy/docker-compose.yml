@@ -12,6 +12,8 @@ services:
   metrics-gateway:
     image: metrics-gateway:latest
     container_name: metrics-gateway
+    init: true
+    stop_grace_period: 0s
     build:
       context: ..
       dockerfile: services/metrics-gateway/Dockerfile
@@ -33,6 +35,8 @@ services:
   raid-simulator:
     image: raid-simulator:latest
     container_name: raid-simulator
+    init: true
+    stop_grace_period: 0s
     build:
       context: ..
       dockerfile: services/raid-simulator/Dockerfile

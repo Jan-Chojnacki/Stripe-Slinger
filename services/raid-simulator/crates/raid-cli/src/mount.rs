@@ -33,6 +33,7 @@ fn mount_volume<const D: usize, const N: usize, T>(
     disk_size: u64,
     layout: T,
     metrics: std::sync::Arc<MetricsEmitter>,
+    allow_other: bool,
 ) -> Result<()>
 where
     T: Stripe<D, N> + Send + 'static,
@@ -151,10 +152,20 @@ where
         capacity,
         metrics: Some(metrics),
     };
-    let mut options = vec![MountOption::RW, MountOption::FSName("raid-fuse".into())];
-    if allow_other_enabled() {
-        options.push(MountOption::AllowOther);
+
+    let mut options = vec![
+        MountOption::RW,
+        MountOption::FSName("raid-fuse".into())
+    ];
+
+    if allow_other {
+        if allow_other_enabled() {
+            options.push(MountOption::AllowOther);
+        } else {
+            tracing::warn!("allow_other requested but not enabled in /etc/fuse.conf");
+        }
     }
+
     fuser::mount2(fs, mount_point, &options)
         .with_context(|| format!("failed to mount filesystem at {}", mount_point.display()))
 }
@@ -193,6 +204,7 @@ fn allow_other_enabled() -> bool {
 /// * `disk_dir` - Directory containing disk images.
 /// * `disk_size` - Size of each disk image in bytes.
 /// * `metrics` - Metrics emitter for runtime status updates.
+/// * `allow_other` - Whether to allow other users (required for NFS export).
 ///
 /// # Errors
 /// Returns an error if the mount cannot be initialized.
@@ -202,6 +214,7 @@ pub fn run_fuse<const D: usize, const N: usize>(
     disk_dir: &Path,
     disk_size: u64,
     metrics: std::sync::Arc<MetricsEmitter>,
+    allow_other: bool,
 ) -> Result<()> {
     match mode {
         RaidMode::Raid0 => mount_volume::<D, N, RAID0<D, N>>(
@@ -210,6 +223,7 @@ pub fn run_fuse<const D: usize, const N: usize>(
             disk_size,
             RAID0::<D, N>::zero(),
             metrics,
+            allow_other,
         ),
         RaidMode::Raid1 => mount_volume::<D, N, RAID1<D, N>>(
             mount_point,
@@ -217,6 +231,7 @@ pub fn run_fuse<const D: usize, const N: usize>(
             disk_size,
             RAID1::<D, N>::zero(),
             metrics,
+            allow_other,
         ),
         RaidMode::Raid3 => mount_volume::<D, N, RAID3<D, N>>(
             mount_point,
@@ -224,6 +239,7 @@ pub fn run_fuse<const D: usize, const N: usize>(
             disk_size,
             RAID3::<D, N>::zero(),
             metrics,
+            allow_other,
         ),
     }
 }
