@@ -23,9 +23,6 @@ resource "grafana_rule_group" "raid_alerts" {
   folder_uid       = grafana_folder.storage_alerts.uid
   interval_seconds = 60
 
-  # =======================================================
-  # RULE 1: RAID Degraded State
-  # =======================================================
   rule {
     name      = "RAID Degraded State"
     condition = "C"
