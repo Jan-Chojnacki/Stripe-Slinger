@@ -1,0 +1,104 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Physical Disk Health & Saturation",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 1 },
+      "id": 2,
+      "options": { "orientation": "horizontal" },
+      "targets": [{ "expr": "sum by (disk_id) (rate(disk_errors{disk_id=~\"$disk_id\"}[1m]))", "legendFormat": "{{disk_id}}", "refId": "A" }],
+      "title": "I/O Errors per Disk (1m rate)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 3,
+      "targets": [{ "expr": "disk_queue_depth{disk_id=~\"$disk_id\"}", "legendFormat": "{{disk_id}}", "refId": "A" }],
+      "title": "Disk Queue Depth (Saturation Indicator)",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 4 }, { "color": "red", "value": 16 }] }
+        }
+      }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 4,
+      "targets": [
+        { "expr": "rate(disk_read_ops{disk_id=~\"$disk_id\"}[1m])", "legendFormat": "{{disk_id}} - Read", "refId": "A" },
+        { "expr": "rate(disk_write_ops{disk_id=~\"$disk_id\"}[1m])", "legendFormat": "{{disk_id}} - Write", "refId": "B" }
+      ],
+      "title": "Physical IOPS",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "iops" } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 5,
+      "title": "Latency Analysis (The \"Limping Disk\" Detector)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
+      "id": 6,
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, disk_id) (rate(disk_read_latency_seconds_bucket{disk_id=~\"$disk_id\"}[1m])))", "legendFormat": "{{disk_id}} P95", "refId": "A" }],
+      "title": "Disk Read Latency P95",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 14 },
+      "id": 7,
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, disk_id) (rate(disk_write_latency_seconds_bucket{disk_id=~\"$disk_id\"}[1m])))", "legendFormat": "{{disk_id}} P95", "refId": "A" }],
+      "title": "Disk Write Latency P95",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "id": 8,
+      "targets": [{ "expr": "rate(disk_read_bytes{disk_id=~\"$disk_id\"}[1m]) + rate(disk_write_bytes{disk_id=~\"$disk_id\"}[1m])", "legendFormat": "{{disk_id}}", "refId": "A" }],
+      "title": "Physical Throughput per Disk (Aggregate)",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "binBps" } }
+    }
+  ],
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus" },
+      {
+        "name": "disk_id",
+        "type": "query",
+        "datasource": "${datasource}",
+        "definition": "label_values(disk_read_ops, disk_id)",
+        "query": "label_values(disk_read_ops, disk_id)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "title": "[DISK] Physical Layer Analysis",
+  "uid": "disk-physical-layer"
+}

@@ -1,0 +1,40 @@
+[package]
+name = "raid-cli"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+description = "CLI for simulating and interacting with the RAID simulator."
+license = "MIT"
+repository = "https://github.com/stripe-slinger/stripe-slinger"
+keywords = ["raid", "storage", "simulator", "cli"]
+categories = ["command-line-utilities", "filesystem"]
+
+[dependencies]
+anyhow = "1.0.100"
+clap = { version = "4.5.48", features = ["derive", "env"] }
+fuser = "0.16.0"
+libc = "0.2.176"
+raid-rs = { path = "../raid-rs" }
+http = "1.4.0"
+
+rand = "0.9.2"
+rand_distr = "0.5.1"
+
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "signal", "net"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+tonic = { version = "0.14.2", features = ["transport"] }
+tonic-prost = "0.14.2"
+
+prost = "0.14.1"
+prost-types = "0.14.1"
+
+hyper-util = { version = "0.1", features = ["tokio"] }
+tower = { version = "0.5.2", features = ["util"] }
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[build-dependencies]
+tonic-prost-build = "0.14.2"
+protoc-bin-vendored = "3.2.0"

@@ -1,0 +1,53 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_PROM_PASSWORD")
+    }
+  }
+}
+
+prometheus.scrape "raid_metrics" {
+  targets = [
+    { __address__ = "metrics-gateway:8080" },
+  ]
+
+  scrape_interval = "5s"
+  scrape_timeout  = "2s"
+
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.relabel "cadvisor_only_raid_simulator_min" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+  rule {
+    source_labels = ["container_label_com_docker_compose_service"]
+    regex         = "raid-simulator"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__name__"]
+    regex         = "container_(cpu_usage_seconds_total|memory_working_set_bytes|network_receive_bytes_total|network_transmit_bytes_total|last_seen|start_time_seconds)"
+    action        = "keep"
+  }
+}
+
+prometheus.scrape "cadvisor" {
+  targets = [
+    { __address__ = "cadvisor:8080" },
+  ]
+
+  scrape_interval = "5s"
+  scrape_timeout  = "2s"
+
+  forward_to = [prometheus.relabel.cadvisor_only_raid_simulator_min.receiver]
+}

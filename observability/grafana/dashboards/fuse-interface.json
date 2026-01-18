@@ -1,0 +1,100 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "FUSE Control & Metadata Operations",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "rate(fuse_open_ops[1m])", "refId": "A" }],
+      "title": "Open Ops Rate",
+      "type": "stat",
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "rate(fuse_fsync_ops[1m])", "refId": "A" }],
+      "title": "Fsync Ops Rate (Durability Calls)",
+      "type": "stat",
+      "fieldConfig": { "defaults": { "unit": "ops", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 50 }] } } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "background", "justifyMode": "center" },
+      "targets": [{ "expr": "rate(fuse_errors[1m])", "refId": "A" }],
+      "title": "FUSE Error Rate",
+      "type": "stat",
+      "fieldConfig": { "defaults": { "unit": "ops", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] } } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 5,
+      "title": "FUSE Data Flow",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 6,
+      "targets": [
+        { "expr": "rate(fuse_read_ops[1m])", "legendFormat": "Read Ops", "refId": "A" },
+        { "expr": "rate(fuse_write_ops[1m])", "legendFormat": "Write Ops", "refId": "B" }
+      ],
+      "title": "FUSE IOPS",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "iops" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 7,
+      "targets": [
+        { "expr": "rate(fuse_read_bytes[1m])", "legendFormat": "Read BW", "refId": "A" },
+        { "expr": "rate(fuse_write_bytes[1m])", "legendFormat": "Write BW", "refId": "B" }
+      ],
+      "title": "FUSE Throughput",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "binBps" } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 8,
+      "title": "Latency Distribution (Application Perspective)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 15 },
+      "id": 9,
+      "targets": [
+        { "expr": "histogram_quantile(0.99, rate(fuse_read_latency_seconds_bucket[1m]))", "legendFormat": "Read P99", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, rate(fuse_read_latency_seconds_bucket[1m]))", "legendFormat": "Read P95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, rate(fuse_write_latency_seconds_bucket[1m]))", "legendFormat": "Write P99", "refId": "C" },
+        { "expr": "histogram_quantile(0.95, rate(fuse_write_latency_seconds_bucket[1m]))", "legendFormat": "Write P95", "refId": "D" }
+      ],
+      "title": "End-to-End Latency (Percentiles)",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } }
+    }
+  ],
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus" }
+    ]
+  },
+  "title": "[FUSE] Filesystem Interface",
+  "uid": "fuse-interface"
+}

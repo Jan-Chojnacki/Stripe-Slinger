@@ -1,2 +1,80 @@
-/target
+# ==============================================================================
+# STRIPE-SLINGER CENTRAL GITIGNORE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# TERRAFORM (Security & Infrastructure)
+# ------------------------------------------------------------------------------
+# Local terraform directory containing binary plugins
+**/.terraform/
+
+# State files (contains sensitive plain-text data)
+*.tfstate
+*.tfstate.*
+
+# Secret variables (API keys, tokens, etc.)
+*.tfvars
+*.tfvars.json
+
+# Terraform crash logs
+*.terraform.crashdump
+
+# Dependency lock file (Uncomment if you prefer not to track provider versions)
+# terraform.lock.hcl
+
+# ------------------------------------------------------------------------------
+# STORAGE & SIMULATION DATA
+# ------------------------------------------------------------------------------
+# Ignore all simulation data, virtual disks, and mount points
+storage/**/*
+
+# Exceptions: keep .gitkeep files to ensure directory structure is tracked
+!storage/**/.gitkeep
+
+# ------------------------------------------------------------------------------
+# LANGUAGES & RUNTIMES
+# ------------------------------------------------------------------------------
+
+### Rust (Cargo) ###
+target/
+debug/
+**/*.rs.bk
+*.pdb
+**/mutants.out*/
+
+### Go ###
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# ------------------------------------------------------------------------------
+# IDEs & EDITORS
+# ------------------------------------------------------------------------------
+
+### JetBrains (IntelliJ, GoLand, etc.) ###
+.idea/
+*.iws
+out/
+
+### VS Code ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ------------------------------------------------------------------------------
+# SYSTEM & MISC
+# ------------------------------------------------------------------------------
+.env
 .DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak

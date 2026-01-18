@@ -1,0 +1,185 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "System Health Status",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "green", "index": 0, "text": "OK" }, "1": { "color": "red", "index": 1, "text": "DEGRADED" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "value" },
+      "targets": [{ "expr": "raid_degraded_state{raid=\"$raid\"}", "refId": "A" }],
+      "title": "RAID State",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 2 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "raid_failed_disks{raid=\"$raid\"}", "refId": "A" }],
+      "title": "Failed Disks",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "gray", "text": "Idle" }, "1": { "color": "blue", "text": "Rebuilding" } }, "type": "value" }
+          ]
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "background", "textMode": "value" },
+      "targets": [{ "expr": "raid_rebuild_in_progress{raid=\"$raid\"}", "refId": "A" }],
+      "title": "Rebuild Status",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 5,
+      "options": { "graphMode": "area" },
+      "targets": [{ "expr": "sum(rate(fuse_errors[1m])) + sum(rate(disk_errors[1m]))", "refId": "A" }],
+      "title": "Total Error Rate (1m)",
+      "type": "stat"
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 6,
+      "title": "FUSE Performance (User Perspective)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 7,
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(fuse_read_bytes[1m])", "legendFormat": "Read", "refId": "A" },
+        { "expr": "rate(fuse_write_bytes[1m])", "legendFormat": "Write", "refId": "B" }
+      ],
+      "title": "FUSE Throughput",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "binBps" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 8,
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(fuse_read_latency_seconds_bucket[1m])))", "legendFormat": "Read P99", "refId": "A" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(fuse_write_latency_seconds_bucket[1m])))", "legendFormat": "Write P99", "refId": "B" }
+      ],
+      "title": "FUSE Latency (P99)",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 9,
+      "title": "System Resources (cAdvisor)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
+      "id": 10,
+      "targets": [{ "expr": "rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"raid-simulator\"}[1m]) * 100", "refId": "A" }],
+      "title": "CPU Usage (%)",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
+      "id": 11,
+      "targets": [{ "expr": "container_memory_working_set_bytes{container_label_com_docker_compose_service=\"raid-simulator\"}", "refId": "A" }],
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] },
+          "min": 0,
+          "decimals": 0
+        }
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 22 },
+      "id": 12,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "targets": [{
+        "expr": "changes(container_start_time_seconds{container_label_com_docker_compose_service=\"raid-simulator\"}[1h])",
+        "refId": "A",
+        "legendFormat": "Restarts (1h)"
+      }],
+      "title": "Restarts (Last 1h)",
+      "type": "stat"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus"
+      },
+      {
+        "name": "raid",
+        "type": "query",
+        "datasource": "${datasource}",
+        "definition": "label_values(raid_read_ops, raid)",
+        "query": "label_values(raid_read_ops, raid)",
+        "refresh": 1
+      }
+    ]
+  },
+  "title": "[OVERVIEW] Storage System Health & Performance",
+  "uid": "storage-overview",
+  "version": 1
+}

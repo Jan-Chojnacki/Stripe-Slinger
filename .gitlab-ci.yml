@@ -13,27 +13,48 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   GIT_CLEAN_FLAGS: none
   CARGO_TERM_COLOR: always
+
   CI_RUST_VERSION: "1.91"
-  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/runtime:rust-$CI_RUST_VERSION"
+  CI_RUST_IMAGE: "$CI_REGISTRY_IMAGE/rust-runtime:rust-$CI_RUST_VERSION"
   RUSTFLAGS: "-C debuginfo=2"
+  RUST_PROJECT_DIR: "services/raid-simulator"
+
+  CI_GO_VERSION: "1.25"
+  CI_GO_IMAGE: "$CI_REGISTRY_IMAGE/golang-runtime:go-$CI_GO_VERSION"
+  GO_PROJECT_DIR: "services/metrics-gateway"
 
 .rust-change-paths: &rust_paths
-  - "**/*.rs"
-  - "**/build.rs"
-  - "**/Cargo.toml"
-  - "**/Cargo.lock"
-  - "rust-toolchain*"
-  - ".cargo/**/*"
-  - "Dockerfile"
-  - "Dockerfile.*"
-  - "*/Dockerfile"
-  - "docker/**/*"
+  - "services/raid-simulator/**/*.rs"
+  - "services/raid-simulator/**/Cargo.toml"
+  - "services/raid-simulator/**/Cargo.lock"
+  - "services/raid-simulator/**/build.rs"
+  - "services/raid-simulator/**/Dockerfile"
+  - "services/raid-simulator/**/Makefile"
+  - "services/raid-simulator/**/*.yml"
+  - "services/raid-simulator/**/*.yaml"
+  - "services/raid-simulator/**/*.json"
+
+.go-change-paths: &go_paths
+  - "services/metrics-gateway/**/*.go"
+  - "services/metrics-gateway/go.mod"
+  - "services/metrics-gateway/go.sum"
+  - "services/metrics-gateway/**/Dockerfile"
+  - "services/metrics-gateway/**/Makefile"
+  - "services/metrics-gateway/**/*.yml"
+  - "services/metrics-gateway/**/*.yaml"
+  - "services/metrics-gateway/**/*.json"
 
 .runtime-image-change-paths: &runtime_image_paths
-  - .gitlab/ci/images/runtime/Dockerfile
-  - .gitlab/ci/images/runtime/**/*
-  - .gitlab/ci/runtime-image.yml
-  - .gitlab/ci/scripts/build-runtime-image.sh
+  - .gitlab/ci/images/rust-runtime/Dockerfile
+  - .gitlab/ci/images/rust-runtime/**/*
+  - .gitlab/ci/shared/jobs/runtime-image.yml
+  - .gitlab/ci/shared/scripts/build-rust-runtime-image.sh
+
+.go-runtime-image-change-paths: &go_runtime_image_paths
+  - .gitlab/ci/images/golang-runtime/Dockerfile
+  - .gitlab/ci/images/golang-runtime/**/*
+  - .gitlab/ci/shared/jobs/runtime-image.yml
+  - .gitlab/ci/shared/scripts/build-golang-runtime-image.sh
 
 .rules-master-always:
   rules:
@@ -65,13 +86,42 @@ variables:
       changes: *rust_paths
       when: on_success
 
+.rules-mr-master-go-code:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      changes: *go_paths
+      when: on_success
+
+.rules-mr-develop-go-code:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      changes: *go_paths
+      when: on_success
+
+.rules-feature-go-soft:
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+      changes: *go_paths
+      when: on_success
+      allow_failure: true
+
+.rules-dev-go-code:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      changes: *go_paths
+      when: on_success
+
 .rules-no-code-gate:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: never
     - changes: *rust_paths
       when: never
+    - changes: *go_paths
+      when: never
     - changes: *runtime_image_paths
+      when: never
+    - changes: *go_runtime_image_paths
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
@@ -79,10 +129,19 @@ variables:
 
 .rules-docker-build-and-push:
   rules:
-    - if: '$CI_COMMIT_TAG'
+    - if: "$CI_COMMIT_TAG"
       when: on_success
     - if: '$CI_COMMIT_BRANCH == "master"'
       changes: *rust_paths
+      when: on_success
+    - when: never
+
+.rules-docker-build-and-push-go:
+  rules:
+    - if: "$CI_COMMIT_TAG"
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      changes: *go_paths
       when: on_success
     - when: never
 
@@ -93,16 +152,25 @@ variables:
     - changes: *runtime_image_paths
       when: on_success
     - when: never
+
+.rules-go-runtime-image:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: on_success
+    - changes: *go_runtime_image_paths
+      when: on_success
+    - when: never
+
 .rules-tag-only:
   rules:
-    - if: '$CI_COMMIT_TAG'
+    - if: "$CI_COMMIT_TAG"
       when: on_success
     - when: never
 
 default:
   image:
-    name: $CI_RUST_IMAGE         
-    pull_policy: always          
+    name: $CI_RUST_IMAGE
+    pull_policy: always
   tags:
     - primary
   interruptible: true
@@ -111,33 +179,50 @@ default:
     - cargo --version
 
 include:
-  - local: ".gitlab/ci/runtime-image.yml"
-  - local: ".gitlab/ci/no-code-gate.yml"
-  - local: ".gitlab/ci/lint.yml"
-  - local: ".gitlab/ci/test.yml"
-  - local: ".gitlab/ci/quality.yml"
-  - local: ".gitlab/ci/release.yml"
+  - local: ".gitlab/ci/shared/jobs/runtime-image.yml"
+  - local: ".gitlab/ci/shared/jobs/no-code-gate.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/lint.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/tests.yml"
+  - local: ".gitlab/ci/raid-simulator/jobs/quality.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/lint.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/tests.yml"
+  - local: ".gitlab/ci/metrics-gateway/jobs/quality.yml"
+  - local: ".gitlab/ci/shared/jobs/release.yml"
 
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: $CI_PIPELINE_SOURCE == "schedule"
       when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: always
-    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_COMMIT_BRANCH == "master"
       when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: $CI_COMMIT_BRANCH == "develop"
       when: always
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
       changes:
-        compare_to: 'refs/heads/develop'
+        compare_to: "refs/heads/develop"
         paths: *rust_paths
       when: always
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\//'
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
       changes:
-        compare_to: 'refs/heads/develop'
+        compare_to: "refs/heads/develop"
+        paths: *go_paths
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
+      changes:
+        compare_to: "refs/heads/develop"
         paths: *runtime_image_paths
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
+      changes:
+        compare_to: "refs/heads/develop"
+        paths: *go_runtime_image_paths
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ && $CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/
       when: always
     - when: never
