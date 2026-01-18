@@ -20,7 +20,7 @@ pub struct Entry {
 #[allow(clippy::missing_const_for_fn)]
 impl Entry {
     #[must_use]
-    /// empty returns an unused entry with zeroed fields.
+    /// `empty` returns an unused entry with zeroed fields.
     pub fn empty() -> Self {
         Self {
             name: String::new(),
@@ -31,7 +31,7 @@ impl Entry {
     }
 
     #[must_use]
-    /// to_bytes serializes the entry into a fixed-size buffer.
+    /// `to_bytes` serializes the entry into a fixed-size buffer.
     ///
     /// # Returns
     /// A byte array containing the serialized entry.
@@ -47,10 +47,13 @@ impl Entry {
     }
 
     #[must_use]
-    /// from_bytes deserializes an entry from a fixed-size buffer.
+    /// `from_bytes` deserializes an entry from a fixed-size buffer.
     ///
     /// # Arguments
     /// * `buf` - Buffer containing serialized entry data.
+    ///
+    /// # Panics
+    /// Panics if `buf` is shorter than `ENTRY_SIZE`.
     pub fn from_bytes(buf: &[u8]) -> Self {
         let used = buf.first().copied().unwrap_or(0) == 1;
         let offset = u64::from_le_bytes(buf[8..16].try_into().unwrap());

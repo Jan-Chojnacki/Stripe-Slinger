@@ -8,7 +8,7 @@ use rand_distr::{Distribution, Exp};
 
 use crate::pb::metrics as pb;
 
-/// SyntheticSimulator generates randomized metrics batches for testing.
+/// `SyntheticSimulator` generates randomized metrics batches for testing.
 pub struct SyntheticSimulator {
     rng: StdRng,
     disk_ids: Vec<String>,
@@ -20,7 +20,7 @@ pub struct SyntheticSimulator {
 }
 
 impl SyntheticSimulator {
-    /// new constructs a simulator for the provided disk and RAID identifiers.
+    /// `new` constructs a simulator for the provided disk and RAID identifiers.
     ///
     /// # Arguments
     /// * `disk_ids` - Disk identifiers to emit in samples.
@@ -42,7 +42,7 @@ impl SyntheticSimulator {
     }
 
     #[allow(clippy::too_many_lines)]
-    /// next_batch emits a synthetic metrics batch using the current RNG state.
+    /// `next_batch` emits a synthetic metrics batch using the current RNG state.
     ///
     /// # Arguments
     /// * `source_id` - Identifier for the metrics source.
@@ -329,7 +329,7 @@ mod tests {
             if state.raid_id == "raid1" {
                 assert!((0.0..=1.0).contains(&state.raid1_resync_progress));
             } else {
-                assert_eq!(state.raid1_resync_progress, 0.0);
+                assert!(state.raid1_resync_progress.abs() < f64::EPSILON);
             }
         }
     }

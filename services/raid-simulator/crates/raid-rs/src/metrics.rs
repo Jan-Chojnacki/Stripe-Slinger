@@ -2,14 +2,14 @@
 
 use std::sync::{Arc, OnceLock};
 
-/// IoOpType describes a read or write operation.
+/// `IoOpType` describes a read or write operation.
 #[derive(Copy, Clone, Debug)]
 pub enum IoOpType {
     Read,
     Write,
 }
 
-/// DiskOp captures disk IO metrics emitted by the simulator.
+/// `DiskOp` captures disk IO metrics emitted by the simulator.
 #[derive(Clone, Debug)]
 pub struct DiskOp {
     pub disk_id: String,
@@ -19,7 +19,7 @@ pub struct DiskOp {
     pub error: bool,
 }
 
-/// RaidOp captures RAID IO metrics emitted by the simulator.
+/// `RaidOp` captures RAID IO metrics emitted by the simulator.
 #[derive(Copy, Clone, Debug)]
 pub struct RaidOp {
     pub op: IoOpType,
@@ -28,17 +28,17 @@ pub struct RaidOp {
     pub error: bool,
 }
 
-/// MetricsSink records disk and RAID operations from the simulator.
+/// `MetricsSink` records disk and RAID operations from the simulator.
 pub trait MetricsSink: Send + Sync + 'static {
-    /// record_disk_op records a disk IO event.
+    /// `record_disk_op` records a disk IO event.
     fn record_disk_op(&self, op: DiskOp);
-    /// record_raid_op records a RAID IO event.
+    /// `record_raid_op` records a RAID IO event.
     fn record_raid_op(&self, op: RaidOp);
 }
 
 static METRICS_SINK: OnceLock<Arc<dyn MetricsSink>> = OnceLock::new();
 
-/// install_metrics_sink installs a global metrics sink for the simulator.
+/// `install_metrics_sink` installs a global metrics sink for the simulator.
 ///
 /// # Arguments
 /// * `sink` - Sink implementation to register.
@@ -49,12 +49,12 @@ pub fn install_metrics_sink(sink: Arc<dyn MetricsSink>) -> bool {
     METRICS_SINK.set(sink).is_ok()
 }
 
-/// is_enabled reports whether a metrics sink has been installed.
+/// `is_enabled` reports whether a metrics sink has been installed.
 pub fn is_enabled() -> bool {
     METRICS_SINK.get().is_some()
 }
 
-/// record_disk_op forwards a disk operation to the installed sink.
+/// `record_disk_op` forwards a disk operation to the installed sink.
 ///
 /// # Arguments
 /// * `op` - Disk operation to record.
@@ -64,7 +64,7 @@ pub fn record_disk_op(op: DiskOp) {
     }
 }
 
-/// record_raid_op forwards a RAID operation to the installed sink.
+/// `record_raid_op` forwards a RAID operation to the installed sink.
 ///
 /// # Arguments
 /// * `op` - RAID operation to record.
@@ -118,15 +118,21 @@ mod tests {
             error: true,
         });
 
-        let disk_ops = sink.disk_ops.lock().unwrap();
-        assert_eq!(disk_ops.len(), 1);
-        assert_eq!(disk_ops[0].disk_id, "disk1");
-        assert_eq!(disk_ops[0].bytes, 2048);
-        assert!(!disk_ops[0].error);
+        {
+            let disk_ops = sink.disk_ops.lock().unwrap();
+            assert_eq!(disk_ops.len(), 1);
+            assert_eq!(disk_ops[0].disk_id, "disk1");
+            assert_eq!(disk_ops[0].bytes, 2048);
+            assert!(!disk_ops[0].error);
+            drop(disk_ops);
+        }
 
-        let raid_ops = sink.raid_ops.lock().unwrap();
-        assert_eq!(raid_ops.len(), 1);
-        assert_eq!(raid_ops[0].bytes, 512);
-        assert!(raid_ops[0].error);
+        {
+            let raid_ops = sink.raid_ops.lock().unwrap();
+            assert_eq!(raid_ops.len(), 1);
+            assert_eq!(raid_ops[0].bytes, 512);
+            assert!(raid_ops[0].error);
+            drop(raid_ops);
+        }
     }
 }

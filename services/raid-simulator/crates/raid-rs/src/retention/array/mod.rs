@@ -15,11 +15,14 @@ pub struct Array<const D: usize, const N: usize>(pub [Disk; D]);
 
 impl<const D: usize, const N: usize> Array<D, N> {
     #[must_use]
-    /// init_array creates and opens a disk array using the provided paths.
+    /// `init_array` creates and opens a disk array using the provided paths.
     ///
     /// # Arguments
     /// * `paths` - Disk image paths, one per disk.
     /// * `len` - Length of each disk image in bytes.
+    ///
+    /// # Panics
+    /// Panics if any disk image cannot be created or opened.
     pub fn init_array(paths: &[String; D], len: u64) -> Self {
         let array: [Disk; D] =
             std::array::from_fn(|i| Disk::open_prealloc(&paths[i], len).unwrap());
@@ -28,12 +31,12 @@ impl<const D: usize, const N: usize> Array<D, N> {
     }
 
     #[must_use]
-    /// disk_len returns the length of the first disk in the array.
+    /// `disk_len` returns the length of the first disk in the array.
     pub fn disk_len(&self) -> u64 {
         self.0.first().map_or(0, Disk::len)
     }
 
-    /// fail_disk simulates a disk failure at the specified index.
+    /// `fail_disk` simulates a disk failure at the specified index.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to fail.
@@ -47,7 +50,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
         self.0[i].fail()
     }
 
-    /// replace_disk replaces the disk image at the specified index.
+    /// `replace_disk` replaces the disk image at the specified index.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to replace.
@@ -62,7 +65,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
     }
 
     #[must_use]
-    /// status_string returns a human-readable status summary for each disk.
+    /// `status_string` returns a human-readable status summary for each disk.
     pub fn status_string(&self) -> String {
         let mut out = String::new();
         for (i, d) in self.0.iter().enumerate() {
@@ -83,7 +86,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
         out
     }
 
-    /// write persists a stripe to disk at the specified offset.
+    /// `write` persists a stripe to disk at the specified offset.
     ///
     /// # Arguments
     /// * `off` - Byte offset within each disk.
@@ -114,7 +117,7 @@ impl<const D: usize, const N: usize> Array<D, N> {
         }
     }
 
-    /// read loads a stripe from disk at the specified offset.
+    /// `read` loads a stripe from disk at the specified offset.
     ///
     /// # Arguments
     /// * `off` - Byte offset within each disk.

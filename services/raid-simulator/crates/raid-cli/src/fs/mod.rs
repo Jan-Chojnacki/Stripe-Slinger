@@ -23,14 +23,14 @@ pub(crate) mod test_utils {
     use super::metadata::{Entry, Header};
     use super::raidfs::{FsState, RaidFs};
 
-    /// TestStripe is the RAID0 stripe used by filesystem tests.
+    /// `TestStripe` is the RAID0 stripe used by filesystem tests.
     pub type TestStripe = RAID0<1, { DEFAULT_CHUNK_SIZE }>;
-    /// TestState is the filesystem state type used by tests.
+    /// `TestState` is the filesystem state type used by tests.
     pub type TestState = FsState<1, { DEFAULT_CHUNK_SIZE }, TestStripe>;
-    /// TestFs is the filesystem wrapper type used by tests.
+    /// `TestFs` is the filesystem wrapper type used by tests.
     pub type TestFs = RaidFs<1, { DEFAULT_CHUNK_SIZE }, TestStripe>;
 
-    /// temp_dir creates a temporary directory for test artifacts.
+    /// `temp_dir` creates a temporary directory for test artifacts.
     pub fn temp_dir(prefix: &str) -> PathBuf {
         let mut dir = std::env::temp_dir();
         let nanos = SystemTime::now()
@@ -42,7 +42,7 @@ pub(crate) mod test_utils {
         dir
     }
 
-    /// create_test_state builds a basic in-memory filesystem state.
+    /// `create_test_state` builds a basic in-memory filesystem state.
     pub fn create_test_state() -> TestState {
         let dir = temp_dir("raid-cli");
         let paths = [dir.join("disk-0.img").to_string_lossy().into_owned()];
@@ -59,7 +59,7 @@ pub(crate) mod test_utils {
         }
     }
 
-    /// create_test_fs builds a ready-to-use filesystem wrapper for tests.
+    /// `create_test_fs` builds a ready-to-use filesystem wrapper for tests.
     pub fn create_test_fs() -> TestFs {
         let state = create_test_state();
         let capacity = state.volume.logical_capacity_bytes();

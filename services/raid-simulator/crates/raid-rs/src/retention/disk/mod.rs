@@ -20,7 +20,7 @@ pub struct Disk {
 }
 
 impl Disk {
-    /// open_prealloc opens or creates a disk image, ensuring it is preallocated.
+    /// `open_prealloc` opens or creates a disk image, ensuring it is preallocated.
     ///
     /// # Arguments
     /// * `path` - Path to the disk image file.
@@ -55,7 +55,7 @@ impl Disk {
         })
     }
 
-    /// fail marks the disk as failed and releases its resources.
+    /// `fail` marks the disk as failed and releases its resources.
     ///
     /// # Errors
     /// Returns an error if the disk image cannot be renamed.
@@ -74,7 +74,7 @@ impl Disk {
         Ok(())
     }
 
-    /// replace recreates the disk image and marks it for rebuild.
+    /// `replace` recreates the disk image and marks it for rebuild.
     ///
     /// # Errors
     /// Returns an error if the disk image cannot be recreated or mapped.
@@ -97,31 +97,31 @@ impl Disk {
     }
 
     #[must_use]
-    /// path returns the filesystem path of the disk image.
+    /// `path` returns the filesystem path of the disk image.
     pub fn path(&self) -> &Path {
         &self.path
     }
 
     #[must_use]
-    /// len returns the disk image length in bytes.
+    /// `len` returns the disk image length in bytes.
     pub const fn len(&self) -> u64 {
         self.len
     }
 
     #[must_use]
-    /// is_operational reports whether the disk is open and mapped.
+    /// `is_operational` reports whether the disk is open and mapped.
     pub const fn is_operational(&self) -> bool {
         self.file.is_some() && self.map.is_some()
     }
 
     #[must_use]
-    /// is_empty reports whether the disk length is zero.
+    /// `is_empty` reports whether the disk length is zero.
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     #[must_use]
-    /// is_missing reports whether the disk is missing or not operational.
+    /// `is_missing` reports whether the disk is missing or not operational.
     pub fn is_missing(&self) -> bool {
         if !self.is_operational() {
             return true;
@@ -132,7 +132,7 @@ impl Disk {
             .unwrap_or(true)
     }
 
-    /// read_at reads bytes starting at the given offset into the buffer.
+    /// `read_at` reads bytes starting at the given offset into the buffer.
     ///
     /// # Arguments
     /// * `off` - Byte offset within the disk image.
@@ -160,7 +160,7 @@ impl Disk {
         n
     }
 
-    /// write_at writes bytes starting at the given offset from the input slice.
+    /// `write_at` writes bytes starting at the given offset from the input slice.
     ///
     /// # Arguments
     /// * `off` - Byte offset within the disk image.

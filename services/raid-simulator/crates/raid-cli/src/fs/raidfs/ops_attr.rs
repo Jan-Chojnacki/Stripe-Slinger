@@ -23,7 +23,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     pub(crate) fn op_getxattr(
-        &self,
         _req: &Request<'_>,
         ino: u64,
         _name: &std::ffi::OsStr,
@@ -152,7 +151,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             files,
             ffree,
             STATFS_BLOCK_SIZE,
-            NAME_LEN as u32,
+            u32::try_from(NAME_LEN).unwrap_or(u32::MAX),
             STATFS_BLOCK_SIZE,
         );
     }

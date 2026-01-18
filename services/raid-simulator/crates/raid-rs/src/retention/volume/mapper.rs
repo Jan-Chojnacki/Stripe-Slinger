@@ -8,7 +8,7 @@ pub struct Geometry {
     pub bytes_per_stripe: usize,
 }
 
-/// geometry computes the stripe geometry for a given layout.
+/// `geometry` computes the stripe geometry for a given layout.
 ///
 /// # Returns
 /// A Geometry describing chunk and stripe sizes in bytes.
@@ -19,7 +19,7 @@ pub fn geometry<const D: usize, const N: usize, S: Stripe<D, N>>() -> Geometry {
     }
 }
 
-/// locate_byte maps a logical byte offset to its stripe index and in-stripe offset.
+/// `locate_byte` maps a logical byte offset to its stripe index and in-stripe offset.
 ///
 /// # Arguments
 /// * `byte_offset` - Starting logical byte offset.
@@ -42,7 +42,7 @@ pub fn locate_byte(byte_offset: u64, byte_delta: usize, geom: &Geometry) -> (u64
     (stripe, in_stripe)
 }
 
-/// stripe_byte_offset returns the byte offset for the start of a stripe.
+/// `stripe_byte_offset` returns the byte offset for the start of a stripe.
 ///
 /// # Arguments
 /// * `stripe_index` - Index of the stripe within the volume.

@@ -13,25 +13,25 @@ pub struct Bits<const N: usize>(pub [u8; N]);
 impl<const N: usize> Bits<N> {
     #[inline]
     #[must_use]
-    /// zero returns a zero-initialized bit buffer.
+    /// `zero` returns a zero-initialized bit buffer.
     pub const fn zero() -> Self {
         Self([0u8; N])
     }
     #[inline]
     #[must_use]
-    /// as_bytes returns a shared reference to the underlying byte array.
+    /// `as_bytes` returns a shared reference to the underlying byte array.
     pub const fn as_bytes(&self) -> &[u8; N] {
         &self.0
     }
     #[inline]
-    /// as_bytes_mut returns a mutable reference to the underlying byte array.
+    /// `as_bytes_mut` returns a mutable reference to the underlying byte array.
     pub const fn as_bytes_mut(&mut self) -> &mut [u8; N] {
         &mut self.0
     }
 
     #[inline]
     #[must_use]
-    /// get returns the bit value at the provided index.
+    /// `get` returns the bit value at the provided index.
     ///
     /// # Arguments
     /// * `i` - The bit index within the buffer.
@@ -41,7 +41,7 @@ impl<const N: usize> Bits<N> {
     }
 
     #[inline]
-    /// set updates the bit at the provided index.
+    /// `set` updates the bit at the provided index.
     ///
     /// # Arguments
     /// * `i` - The bit index within the buffer.
@@ -57,7 +57,7 @@ impl<const N: usize> Bits<N> {
     }
 
     #[inline]
-    /// xor_in_place performs an in-place XOR with another buffer.
+    /// `xor_in_place` performs an in-place XOR with another buffer.
     ///
     /// # Arguments
     /// * `rhs` - The buffer to XOR into this one.

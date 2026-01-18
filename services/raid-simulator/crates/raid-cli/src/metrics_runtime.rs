@@ -16,7 +16,7 @@ use crate::cli::MetricsArgs;
 use crate::pb::metrics;
 use crate::sender::{SenderConfig, SenderStats, run_sender};
 
-/// FuseOpType identifies the kind of FUSE operation.
+/// `FuseOpType` identifies the kind of FUSE operation.
 #[derive(Copy, Clone, Debug)]
 pub enum FuseOpType {
     Read,
@@ -25,7 +25,7 @@ pub enum FuseOpType {
     Fsync,
 }
 
-/// FuseOp captures a FUSE-level operation sample.
+/// `FuseOp` captures a FUSE-level operation sample.
 #[derive(Clone, Debug)]
 pub struct FuseOp {
     pub op: FuseOpType,
@@ -34,7 +34,7 @@ pub struct FuseOp {
     pub error: bool,
 }
 
-/// MetricsEvent describes events emitted by the simulator for batching.
+/// `MetricsEvent` describes events emitted by the simulator for batching.
 #[derive(Clone, Debug)]
 pub enum MetricsEvent {
     DiskOp(DiskOp),
@@ -44,7 +44,7 @@ pub enum MetricsEvent {
     RaidState(metrics::RaidState),
 }
 
-/// MetricsEmitter forwards simulator events into an async channel.
+/// `MetricsEmitter` forwards simulator events into an async channel.
 #[derive(Clone)]
 pub struct MetricsEmitter {
     raid_id: String,
@@ -52,7 +52,7 @@ pub struct MetricsEmitter {
 }
 
 impl MetricsEmitter {
-    /// new creates a MetricsEmitter bound to a RAID identifier.
+    /// `new` creates a `MetricsEmitter` bound to a RAID identifier.
     ///
     /// # Arguments
     /// * `raid_id` - Identifier of the RAID volume.
@@ -61,7 +61,7 @@ impl MetricsEmitter {
         Arc::new(Self { raid_id, tx })
     }
 
-    /// record_fuse_op enqueues a FUSE operation event.
+    /// `record_fuse_op` enqueues a FUSE operation event.
     ///
     /// # Arguments
     /// * `op` - FUSE operation to record.
@@ -69,7 +69,7 @@ impl MetricsEmitter {
         let _ = self.tx.try_send(MetricsEvent::FuseOp(op));
     }
 
-    /// record_disk_status enqueues a disk status update.
+    /// `record_disk_status` enqueues a disk status update.
     ///
     /// # Arguments
     /// * `status` - Disk status summary.
@@ -90,7 +90,7 @@ impl MetricsEmitter {
             }));
     }
 
-    /// record_raid_state enqueues a RAID status update.
+    /// `record_raid_state` enqueues a RAID status update.
     ///
     /// # Arguments
     /// * `failed_disks` - Count of failed disks.
@@ -121,7 +121,7 @@ impl MetricsSink for MetricsEmitter {
     }
 }
 
-/// run_event_metrics_loop batches events and streams them to the metrics gateway.
+/// `run_event_metrics_loop` batches events and streams them to the metrics gateway.
 ///
 /// # Arguments
 /// * `args` - Metrics configuration arguments.
@@ -135,7 +135,7 @@ impl MetricsSink for MetricsEmitter {
 /// Returns an error if the sender task fails.
 pub async fn run_event_metrics_loop(
     args: MetricsArgs,
-    mut shutdown_rx: watch::Receiver<bool>,
+    shutdown_rx: watch::Receiver<bool>,
     event_rx: mpsc::Receiver<MetricsEvent>,
 ) -> Result<SenderStats> {
     let (tx, rx) = mpsc::channel::<metrics::MetricsBatch>(args.queue_cap);
@@ -166,7 +166,7 @@ pub async fn run_event_metrics_loop(
     };
 
     let mut sender_task = tokio::spawn(run_sender(rx, shutdown_rx.clone(), sender_cfg));
-    let mut generator_task = tokio::spawn(run_event_generator(
+    let generator_task = tokio::spawn(run_event_generator(
         tx,
         shutdown_rx.clone(),
         event_rx,
@@ -221,7 +221,7 @@ async fn run_event_generator(
                             raid_ops.push(to_raid_op(&raid_id, op));
                         }
                         MetricsEvent::FuseOp(op) => {
-                            fuse_ops.push(to_fuse_op(op));
+                            fuse_ops.push(to_fuse_op(&op));
                         }
                         MetricsEvent::DiskState(state) => {
                             disk_state_cache.insert(state.disk_id.clone(), state);
@@ -326,7 +326,7 @@ fn to_raid_op(raid_id: &str, op: RaidOp) -> metrics::RaidOp {
     }
 }
 
-fn to_fuse_op(op: FuseOp) -> metrics::FuseOp {
+const fn to_fuse_op(op: &FuseOp) -> metrics::FuseOp {
     let op_type = match op.op {
         FuseOpType::Read => metrics::FuseOpType::FuseOpRead,
         FuseOpType::Write => metrics::FuseOpType::FuseOpWrite,
@@ -341,7 +341,7 @@ fn to_fuse_op(op: FuseOp) -> metrics::FuseOp {
     }
 }
 
-fn to_io_op(op: IoOpType) -> i32 {
+const fn to_io_op(op: IoOpType) -> i32 {
     match op {
         IoOpType::Read => metrics::IoOpType::IoOpRead as i32,
         IoOpType::Write => metrics::IoOpType::IoOpWrite as i32,
@@ -386,9 +386,9 @@ fn process_sample() -> Option<metrics::ProcessSample> {
 
 #[cfg(unix)]
 fn timeval_to_secs(tv: libc::timeval) -> f64 {
-    let secs = tv.tv_sec as f64;
-    let micros = tv.tv_usec as f64 / 1_000_000.0;
-    secs + micros
+    let secs = i32::try_from(tv.tv_sec).unwrap_or(i32::MAX);
+    let micros = i32::try_from(tv.tv_usec).unwrap_or(i32::MAX);
+    f64::from(secs) + (f64::from(micros) / 1_000_000.0)
 }
 
 #[cfg(test)]
@@ -511,7 +511,7 @@ mod tests {
         assert_eq!(raid_op.raid_id, "raid1");
         assert_eq!(raid_op.op, metrics::IoOpType::IoOpRead as i32);
         assert_eq!(raid_op.bytes, 12);
-        assert_eq!(raid_op.latency_seconds, 0.25);
+        assert!((raid_op.latency_seconds - 0.25).abs() < f64::EPSILON);
         assert!(!raid_op.error);
         assert_eq!(raid_op.served_from_disk_id, "");
         assert!(!raid_op.raid3_parity_read);
@@ -521,7 +521,7 @@ mod tests {
         let fuse_op = &batch.fuse_ops[0];
         assert_eq!(fuse_op.op, metrics::FuseOpType::FuseOpWrite as i32);
         assert_eq!(fuse_op.bytes, 128);
-        assert_eq!(fuse_op.latency_seconds, 0.04);
+        assert!((fuse_op.latency_seconds - 0.04).abs() < f64::EPSILON);
         assert!(fuse_op.error);
 
         let _ = shutdown_tx.send(true);

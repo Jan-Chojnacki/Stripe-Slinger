@@ -136,7 +136,6 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     ) {
         let start = Instant::now();
         let mut error = false;
-        let mut bytes_written: u64 = 0;
         if ino == CTL_INO {
             let cmd = std::str::from_utf8(data).unwrap_or("").trim();
 
@@ -156,8 +155,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                     self.record_fuse_op(FuseOpType::Write, 0, start, error);
                     return;
                 }
-                bytes_written = u64::try_from(Self::write_len(data.len())).unwrap_or(0);
-                reply.written(Self::write_len(data.len()));
+                let write_len = Self::write_len(data.len());
+                let bytes_written = u64::from(write_len);
+                reply.written(write_len);
                 self.record_fuse_op(FuseOpType::Write, bytes_written, start, error);
                 self.record_disk_and_raid_states(&state.volume, 0.0);
                 return;
@@ -179,8 +179,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         self.record_fuse_op(FuseOpType::Write, 0, start, error);
                         return;
                     }
-                    bytes_written = u64::try_from(Self::write_len(data.len())).unwrap_or(0);
-                    reply.written(Self::write_len(data.len()));
+                    let write_len = Self::write_len(data.len());
+                    let bytes_written = u64::from(write_len);
+                    reply.written(write_len);
                     self.record_fuse_op(FuseOpType::Write, bytes_written, start, error);
                     self.record_disk_and_raid_states(&state.volume, 0.0);
                     return;
@@ -202,8 +203,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         self.record_fuse_op(FuseOpType::Write, 0, start, error);
                         return;
                     }
-                    bytes_written = u64::try_from(Self::write_len(data.len())).unwrap_or(0);
-                    reply.written(Self::write_len(data.len()));
+                    let write_len = Self::write_len(data.len());
+                    let bytes_written = u64::from(write_len);
+                    reply.written(write_len);
                     self.record_fuse_op(FuseOpType::Write, bytes_written, start, error);
                     self.record_disk_and_raid_states(&state.volume, 0.0);
                     return;
@@ -219,8 +221,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
                         self.record_fuse_op(FuseOpType::Write, 0, start, error);
                         return;
                     }
-                    bytes_written = u64::try_from(Self::write_len(data.len())).unwrap_or(0);
-                    reply.written(Self::write_len(data.len()));
+                    let write_len = Self::write_len(data.len());
+                    let bytes_written = u64::from(write_len);
+                    reply.written(write_len);
                     self.record_fuse_op(FuseOpType::Write, bytes_written, start, error);
                     self.record_disk_and_raid_states(&state.volume, 0.0);
                     return;
@@ -289,8 +292,9 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
             state.header.next_free = new_end;
         }
         save_header_and_entry(&mut state, index);
-        reply.written(Self::write_len(data.len()));
-        bytes_written = u64::try_from(Self::write_len(data.len())).unwrap_or(0);
+        let write_len = Self::write_len(data.len());
+        reply.written(write_len);
+        let bytes_written = u64::from(write_len);
         self.record_fuse_op(FuseOpType::Write, bytes_written, start, error);
     }
 

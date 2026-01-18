@@ -9,7 +9,7 @@ use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint};
 use tower::util::service_fn;
 
-/// connect_uds connects to a gRPC endpoint over a Unix domain socket.
+/// `connect_uds` connects to a gRPC endpoint over a Unix domain socket.
 ///
 /// # Arguments
 /// * `socket_path` - Path to the Unix domain socket.

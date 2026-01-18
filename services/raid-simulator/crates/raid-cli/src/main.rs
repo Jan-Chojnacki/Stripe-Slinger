@@ -1,4 +1,5 @@
 #![allow(clippy::multiple_crate_versions)]
+#![allow(clippy::cargo_common_metadata)]
 //! CLI entry point for the RAID simulator and metrics streamer.
 
 use anyhow::Result;
@@ -95,37 +96,77 @@ fn run_fuse_command(args: cli::FuseArgs, metrics: std::sync::Arc<MetricsEmitter>
         disks,
         disk_size,
         metrics: _,
-        allow_other
+        allow_other,
     } = args;
 
     let disk_size = disk_size.max(1);
 
     match (raid, disks) {
-        (RaidMode::Raid0, 1) => {
-            run_fuse::<1, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
+        (RaidMode::Raid0, 1) => run_fuse::<1, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
         (_, 1) => Err(anyhow::anyhow!("raid mode requires at least 2 disks")),
-        (_, 2) => {
-            run_fuse::<2, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 3) => {
-            run_fuse::<3, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 4) => {
-            run_fuse::<4, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 5) => {
-            run_fuse::<5, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 6) => {
-            run_fuse::<6, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 7) => {
-            run_fuse::<7, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
-        (_, 8) => {
-            run_fuse::<8, DEFAULT_CHUNK_SIZE>(raid, &mount_point, &disk_dir, disk_size, metrics, allow_other)
-        }
+        (_, 2) => run_fuse::<2, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 3) => run_fuse::<3, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 4) => run_fuse::<4, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 5) => run_fuse::<5, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 6) => run_fuse::<6, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 7) => run_fuse::<7, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
+        (_, 8) => run_fuse::<8, DEFAULT_CHUNK_SIZE>(
+            raid,
+            &mount_point,
+            &disk_dir,
+            disk_size,
+            metrics,
+            allow_other,
+        ),
         _ => Err(anyhow::anyhow!(
             "unsupported disk count {disks}; supported range is 1-8"
         )),
@@ -177,18 +218,6 @@ fn run_metrics_only(args: cli::MetricsArgs) -> Result<()> {
     })?;
 
     Ok(())
-}
-
-fn start_metrics_thread(
-    args: cli::MetricsArgs,
-    shutdown_rx: watch::Receiver<bool>,
-) -> std::thread::JoinHandle<Result<SenderStats>> {
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()?;
-        rt.block_on(run_metrics_loop(args, shutdown_rx))
-    })
 }
 
 fn start_event_metrics_thread(
@@ -366,6 +395,7 @@ mod tests {
             disks: 1,
             disk_size: 10,
             metrics: test_metrics_args(),
+            allow_other: false,
         };
 
         let err = run_fuse_command(args, metrics).expect_err("expected error");
@@ -386,6 +416,7 @@ mod tests {
             disks: 9,
             disk_size: 10,
             metrics: test_metrics_args(),
+            allow_other: false,
         };
 
         let err = run_fuse_command(args, metrics).expect_err("expected error");

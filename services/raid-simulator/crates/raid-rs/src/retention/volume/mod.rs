@@ -15,7 +15,7 @@ use crate::metrics::{IoOpType, RaidOp};
 use crate::retention::array::Array;
 use std::time::Instant;
 
-/// DiskStatus summarizes the health of a disk within the volume.
+/// `DiskStatus` summarizes the health of a disk within the volume.
 #[derive(Copy, Clone, Debug)]
 pub struct DiskStatus {
     pub index: usize,
@@ -31,7 +31,7 @@ pub struct Volume<const D: usize, const N: usize, T: Stripe<D, N>> {
 }
 
 impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
-    /// new constructs a Volume from a disk array and stripe layout.
+    /// `new` constructs a `Volume` from a disk array and stripe layout.
     ///
     /// # Arguments
     /// * `array` - Disk array backing the volume.
@@ -44,12 +44,12 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         }
     }
 
-    /// disk_status_string returns a human-readable status summary.
+    /// `disk_status_string` returns a human-readable status summary.
     pub fn disk_status_string(&self) -> String {
         self.array.status_string()
     }
 
-    /// fail_disk marks the disk at the given index as failed.
+    /// `fail_disk` marks the disk at the given index as failed.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to fail.
@@ -60,7 +60,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.array.fail_disk(i)
     }
 
-    /// replace_disk replaces the disk image at the given index.
+    /// `replace_disk` replaces the disk image at the given index.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to replace.
@@ -71,7 +71,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.array.replace_disk(i)
     }
 
-    /// any_needs_rebuild reports whether any disk needs rebuild work.
+    /// `any_needs_rebuild` reports whether any disk needs rebuild work.
     pub fn any_needs_rebuild(&self) -> bool {
         self.array
             .0
@@ -79,7 +79,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             .any(|d| d.needs_rebuild && !d.is_missing())
     }
 
-    /// failed_disks returns the number of missing disks.
+    /// `failed_disks` returns the number of missing disks.
     pub fn failed_disks(&self) -> u32 {
         self.array
             .0
@@ -90,7 +90,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             .unwrap_or(u32::MAX)
     }
 
-    /// disk_statuses returns a list of disk status summaries.
+    /// `disk_statuses` returns a list of disk status summaries.
     pub fn disk_statuses(&self) -> Vec<DiskStatus> {
         self.array
             .0
@@ -104,12 +104,12 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
             .collect()
     }
 
-    /// logical_capacity_bytes returns the logical data capacity of the volume.
+    /// `logical_capacity_bytes` returns the logical data capacity of the volume.
     pub fn logical_capacity_bytes(&self) -> u64 {
         self.array.disk_len().saturating_mul(T::DATA as u64)
     }
 
-    /// stripes_needed_for_logical_end returns the stripe count for the given logical end.
+    /// `stripes_needed_for_logical_end` returns the stripe count for the given logical end.
     ///
     /// # Arguments
     /// * `logical_end` - Logical byte position at the end of interest.
@@ -125,7 +125,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         end.div_ceil(bytes_per_stripe)
     }
 
-    /// repair_stripe forces a stripe read to rebuild missing data.
+    /// `repair_stripe` forces a stripe read to rebuild missing data.
     ///
     /// # Arguments
     /// * `stripe_index` - Index of the stripe to repair.
@@ -133,7 +133,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.load_stripe(stripe_index);
     }
 
-    /// clear_needs_rebuild_all clears rebuild flags on all operational disks.
+    /// `clear_needs_rebuild_all` clears rebuild flags on all operational disks.
     pub fn clear_needs_rebuild_all(&mut self) {
         for d in &mut self.array.0 {
             if !d.is_missing() {
@@ -142,7 +142,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         }
     }
 
-    /// clear_needs_rebuild_disk clears the rebuild flag for a specific disk.
+    /// `clear_needs_rebuild_disk` clears the rebuild flag for a specific disk.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to clear.
@@ -152,12 +152,12 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         }
     }
 
-    /// rebuild triggers a best-effort rebuild across all disks.
+    /// `rebuild` triggers a best-effort rebuild across all disks.
     pub fn rebuild(&mut self) {
         let _ = self.rebuild_all();
     }
 
-    /// rebuild_all_upto rebuilds stripes up to the provided logical end.
+    /// `rebuild_all_upto` rebuilds stripes up to the provided logical end.
     ///
     /// # Arguments
     /// * `logical_end` - Logical byte position to rebuild up to.
@@ -181,7 +181,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         Ok(())
     }
 
-    /// rebuild_disk_upto rebuilds a specific disk up to the provided logical end.
+    /// `rebuild_disk_upto` rebuilds a specific disk up to the provided logical end.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to rebuild.
@@ -212,7 +212,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         Ok(())
     }
 
-    /// rebuild_all rebuilds all disks across the full logical range.
+    /// `rebuild_all` rebuilds all disks across the full logical range.
     ///
     /// # Errors
     /// Returns an error if rebuilding fails.
@@ -220,7 +220,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.rebuild_all_upto(self.logical_capacity_bytes())
     }
 
-    /// rebuild_disk rebuilds a single disk across the full logical range.
+    /// `rebuild_disk` rebuilds a single disk across the full logical range.
     ///
     /// # Arguments
     /// * `i` - Index of the disk to rebuild.
@@ -231,7 +231,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         self.rebuild_disk_upto(i, self.logical_capacity_bytes())
     }
 
-    /// write_bytes writes payload bytes into the volume at the logical offset.
+    /// `write_bytes` writes payload bytes into the volume at the logical offset.
     ///
     /// # Arguments
     /// * `byte_offset` - Logical byte offset within the volume.
@@ -274,7 +274,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Volume<D, N, T> {
         }
     }
 
-    /// read_bytes reads bytes from the volume into the output buffer.
+    /// `read_bytes` reads bytes from the volume into the output buffer.
     ///
     /// # Arguments
     /// * `byte_offset` - Logical byte offset within the volume.

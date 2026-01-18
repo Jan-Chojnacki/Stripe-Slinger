@@ -27,6 +27,7 @@ fn disk_paths<const D: usize>(disk_dir: &Path) -> Result<[String; D]> {
     }))
 }
 
+#[allow(clippy::too_many_lines)]
 fn mount_volume<const D: usize, const N: usize, T>(
     mount_point: &Path,
     disk_dir: &Path,
@@ -125,7 +126,9 @@ where
                 if let Ok(mut st) = state_clone.lock() {
                     st.volume.repair_stripe(s);
                     if s + 1 >= last_reported + report_every || s + 1 == stripes {
-                        let progress = (s + 1) as f64 / stripes as f64;
+                        let completed = u32::try_from(s + 1).unwrap_or(u32::MAX);
+                        let total = u32::try_from(stripes).unwrap_or(u32::MAX).max(1);
+                        let progress = f64::from(completed) / f64::from(total);
                         metrics_clone.record_raid_state(st.volume.failed_disks(), true, progress);
                         for status in st.volume.disk_statuses() {
                             metrics_clone.record_disk_status(status);
@@ -153,10 +156,7 @@ where
         metrics: Some(metrics),
     };
 
-    let mut options = vec![
-        MountOption::RW,
-        MountOption::FSName("raid-fuse".into())
-    ];
+    let mut options = vec![MountOption::RW, MountOption::FSName("raid-fuse".into())];
 
     if allow_other {
         if allow_other_enabled() {
@@ -196,7 +196,7 @@ fn allow_other_enabled() -> bool {
         .any(|line| line == "user_allow_other")
 }
 
-/// run_fuse mounts the RAID-backed filesystem using the selected mode.
+/// `run_fuse` mounts the RAID-backed filesystem using the selected mode.
 ///
 /// # Arguments
 /// * `mode` - RAID mode to mount.

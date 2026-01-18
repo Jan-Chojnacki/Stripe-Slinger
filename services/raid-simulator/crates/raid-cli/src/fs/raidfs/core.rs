@@ -35,19 +35,19 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// ctl_attr returns file attributes for the control file.
+    /// `ctl_attr` returns file attributes for the control file.
     pub fn ctl_attr(&self) -> FileAttr {
         Self::file_attr(CTL_INO, CTL_SIZE)
     }
 
     #[must_use]
-    /// data_start returns the byte offset where file data begins.
+    /// `data_start` returns the byte offset where file data begins.
     pub const fn data_start() -> u64 {
         TABLE_SIZE as u64
     }
 
     #[must_use]
-    /// header_bytes serializes a header into a fixed-size buffer.
+    /// `header_bytes` serializes a header into a fixed-size buffer.
     ///
     /// # Arguments
     /// * `header` - Header to serialize.
@@ -62,7 +62,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// parse_header attempts to parse a header from a buffer.
+    /// `parse_header` attempts to parse a header from a buffer.
     ///
     /// # Arguments
     /// * `buf` - Buffer containing header data.
@@ -88,14 +88,14 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// inode_for converts a table index into an inode number.
+    /// `inode_for` converts a table index into an inode number.
     pub const fn inode_for(index: usize) -> u64 {
         FILE_ID_BASE + index as u64
     }
 
     #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    /// index_for_inode converts an inode number into a table index.
+    /// `index_for_inode` converts an inode number into a table index.
     ///
     /// # Returns
     /// `Some(index)` when the inode maps to a valid entry.
@@ -111,7 +111,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// is_valid_name validates a filename for directory entries.
+    /// `is_valid_name` validates a filename for directory entries.
     ///
     /// # Arguments
     /// * `name` - Candidate filename.
@@ -123,7 +123,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// entry_attr returns file attributes for a file entry.
+    /// `entry_attr` returns file attributes for a file entry.
     ///
     /// # Arguments
     /// * `index` - Entry index in the table.
@@ -133,7 +133,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> RaidFs<D, N, T> {
     }
 
     #[must_use]
-    /// root_attr returns file attributes for the root directory.
+    /// `root_attr` returns file attributes for the root directory.
     pub fn root_attr(&self) -> FileAttr {
         FileAttr {
             ino: ROOT_ID,
@@ -187,7 +187,8 @@ mod tests {
     #[test]
     fn header_parse_rejects_bad_max_files() {
         let mut bytes = TestFs::header_bytes(&Header { next_free: 0 });
-        bytes[24..28].copy_from_slice(&(MAX_FILES as u32 + 1).to_le_bytes());
+        let max_files = u32::try_from(MAX_FILES).unwrap_or(u32::MAX);
+        bytes[24..28].copy_from_slice(&max_files.saturating_add(1).to_le_bytes());
         assert!(TestFs::parse_header(&bytes).is_none());
     }
 

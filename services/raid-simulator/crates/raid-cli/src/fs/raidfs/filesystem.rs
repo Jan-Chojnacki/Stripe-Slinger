@@ -30,7 +30,7 @@ impl<const D: usize, const N: usize, T: Stripe<D, N>> Filesystem for RaidFs<D, N
         size: u32,
         reply: ReplyXattr,
     ) {
-        self.op_getxattr(req, ino, name, size, reply);
+        Self::op_getxattr(req, ino, name, size, reply);
     }
 
     #[allow(clippy::similar_names)]

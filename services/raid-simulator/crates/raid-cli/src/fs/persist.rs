@@ -5,7 +5,7 @@ use raid_rs::layout::stripe::traits::stripe::Stripe;
 use super::constants::{ENTRY_SIZE, HEADER_SIZE};
 use super::raidfs::{FsState, RaidFs};
 
-/// save_header_and_entry writes the header and a single entry back to disk.
+/// `save_header_and_entry` writes the header and a single entry back to disk.
 ///
 /// # Arguments
 /// * `state` - Filesystem state to persist.

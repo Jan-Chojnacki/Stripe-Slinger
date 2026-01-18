@@ -22,7 +22,7 @@ pub enum Command {
     Metrics(MetricsArgs),
 }
 
-/// FuseArgs configures the FUSE mount command.
+/// `FuseArgs` configures the FUSE mount command.
 #[derive(Args)]
 pub struct FuseArgs {
     #[arg(long)]
@@ -47,7 +47,7 @@ pub struct FuseArgs {
     pub allow_other: bool,
 }
 
-/// MetricsArgs configures metrics streaming options.
+/// `MetricsArgs` configures metrics streaming options.
 #[derive(Args, Debug, Clone)]
 pub struct MetricsArgs {
     #[arg(
@@ -94,7 +94,7 @@ pub struct MetricsArgs {
     pub auth_token: String,
 }
 
-/// RaidMode selects the RAID layout for the simulation.
+/// `RaidMode` selects the RAID layout for the simulation.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 pub enum RaidMode {
     Raid0,

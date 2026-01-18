@@ -176,6 +176,7 @@ mod tests {
             .expect("create entry");
         let state = fs.state.lock().expect("lock state");
         assert!(state.entries[index].used);
+        drop(state);
     }
 
     #[test]
@@ -187,6 +188,7 @@ mod tests {
         assert!(fs.unlink_entry(ROOT_ID, OsStr::new("deleteme")).is_ok());
         let state = fs.state.lock().expect("lock state");
         assert!(!state.entries[index].used);
+        drop(state);
     }
 
     #[test]

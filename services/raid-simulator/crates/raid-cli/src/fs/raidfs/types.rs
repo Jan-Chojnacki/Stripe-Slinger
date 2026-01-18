@@ -8,14 +8,14 @@ use raid_rs::retention::volume::Volume;
 use crate::fs::metadata::{Entry, Header};
 use crate::metrics_runtime::MetricsEmitter;
 
-/// FsState holds the mutable on-disk state for the filesystem.
+/// `FsState` holds the mutable on-disk state for the filesystem.
 pub struct FsState<const D: usize, const N: usize, T: Stripe<D, N>> {
     pub volume: Volume<D, N, T>,
     pub header: Header,
     pub entries: Vec<Entry>,
 }
 
-/// RaidFs wraps shared state and capacity metadata for FUSE operations.
+/// `RaidFs` wraps shared state and capacity metadata for FUSE operations.
 pub struct RaidFs<const D: usize, const N: usize, T: Stripe<D, N>> {
     pub state: Arc<Mutex<FsState<D, N, T>>>,
     pub capacity: u64,
@@ -40,6 +40,7 @@ mod tests {
         let capacity = fs.capacity;
         let state = fs.state.lock().expect("state lock");
         assert_eq!(capacity, state.volume.logical_capacity_bytes());
+        drop(state);
     }
 
     #[test]
