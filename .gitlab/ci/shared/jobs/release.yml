@@ -8,7 +8,7 @@ raid-simulator-image:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     IMAGE_NAME: "raid-simulator"
-    DOCKER_BUILD_CONTEXT: "services/raid-simulator"
+    DOCKER_BUILD_CONTEXT: "."
     DOCKERFILE_PATH: "services/raid-simulator/Dockerfile"
   before_script: []
   script:
@@ -26,7 +26,7 @@ metrics-gateway-image:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     IMAGE_NAME: "metrics-gateway"
-    DOCKER_BUILD_CONTEXT: "services/metrics-gateway"
+    DOCKER_BUILD_CONTEXT: "."
     DOCKERFILE_PATH: "services/metrics-gateway/Dockerfile"
   before_script: []
   script:
