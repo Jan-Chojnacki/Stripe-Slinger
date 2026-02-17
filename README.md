@@ -5,7 +5,36 @@ A high-fidelity, user-space RAID simulation engine orchestrating virtual block d
 ## 📺 Demo & Visuals
 *Visual documentation of storage geometry and telemetry output.*
 
-🚧 *Coming Soon*
+### 🛠️ Storage Geometry & CLI Control
+*Manual disk orchestration and state verification via terminal interface.*
+
+* **RAID Control & Disk Geometry:**
+
+![RAID CLI Status](/docs/screenshots/RAID_CLI_Status.png)
+
+### 📊 System Health & Performance Monitoring
+*High-level visibility into RAID degradation, global state, and resource utilization.*
+
+* **Global State Dashboard (Degraded):**
+
+![System Health Degraded](/docs/screenshots/System_Health_Degraded.png)
+
+* **Telemetry Initialization & State Reset:**
+
+![Telemetry Gap Analysis](/docs/screenshots/Telemetry_Gap_Analysis.png)
+
+![Monitoring State Reset](/docs/screenshots/Monitoring_State_Reset.png)
+
+### 🔍 Technical Deep-Dive & Telemetry
+*Granular analysis of physical hardware performance, FUSE abstractions, and RAID logic layers.*
+
+* **Physical Layer Analysis (The "Limping Disk" Detector):**
+
+![Physical Disk Telemetry](/docs/screenshots/Physical_Disk_Telemetry.png)
+
+* **RAID Logic Layer & Engine Efficiency:**
+
+![RAID Logic Deep Dive](/docs/screenshots/RAID_Logic_Deep_Dive.png)
 
 ## 🏗️ Architecture & Context
 *High-level system design and execution model.*
