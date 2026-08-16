@@ -2,6 +2,20 @@
 
 A user-space RAID simulator that mounts a FUSE-backed virtual block device and streams per-operation telemetry over gRPC to a Prometheus and Grafana observability stack.
 
+## Table of contents
+
+- [Overview](#overview)
+- [Scope](#scope)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Design notes](#design-notes)
+- [Screenshots](#screenshots)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Authors](#authors)
+- [License](#license)
+
 ## Overview
 
 Stripe Slinger simulates RAID 0, 1 and 3 behaviour, including live disk failure and rebuild, without touching real block devices. A Rust FUSE filesystem stripes and mirrors data across disk images backed by memory-mapped files, then re-exports the mount over NFS so it behaves like an ordinary mounted volume. Every filesystem and RAID operation is streamed to a separate Go telemetry gateway, which exposes Prometheus metrics visualised in Grafana. The project was built as a university/portfolio project and is not currently under active development or deployed anywhere persistent.
@@ -69,6 +83,16 @@ flowchart LR
 
 Grafana Alloy scrapes the gateway's `/metrics` endpoint and cAdvisor, then forwards everything to Grafana Cloud via remote write.
 
+## Design notes
+
+A few implementation choices the code makes worth calling out:
+
+- FUSE integration goes through the `fuser` crate, which provides safe Rust bindings over the kernel FUSE protocol instead of raw C FFI to libfuse.
+- The simulator and gateway talk gRPC over a Unix domain socket rather than TCP, since both processes run on the same host.
+- Disk images are backed by memory-mapped files (`memmap2`), so the striping code reads and writes them as byte-addressable memory instead of managing explicit buffers.
+- Logical-to-physical offset translation (`raid-rs/src/retention/volume/mapper.rs`) is a stateless arithmetic mapping built from division and modulo against fixed stripe and chunk sizes, rather than a lookup table.
+- Metrics are best-effort. Events are pushed onto bounded channels with `try_send`, and a full channel drops the event instead of blocking the storage path.
+
 ## Screenshots
 
 **RAID control and disk geometry:**
@@ -92,23 +116,13 @@ Grafana Alloy scrapes the gateway's `/metrics` endpoint and cAdvisor, then forwa
 
 ![RAID Logic Deep Dive](docs/screenshots/RAID_Logic_Deep_Dive.png)
 
-## Design notes
-
-A few implementation choices the code makes worth calling out:
-
-- FUSE integration goes through the `fuser` crate, which provides safe Rust bindings over the kernel FUSE protocol instead of raw C FFI to libfuse.
-- The simulator and gateway talk gRPC over a Unix domain socket rather than TCP, since both processes run on the same host.
-- Disk images are backed by memory-mapped files (`memmap2`), so the striping code reads and writes them as byte-addressable memory instead of managing explicit buffers.
-- Logical-to-physical offset translation (`raid-rs/src/retention/volume/mapper.rs`) is a stateless arithmetic mapping built from division and modulo against fixed stripe and chunk sizes, rather than a lookup table.
-- Metrics are best-effort. Events are pushed onto bounded channels with `try_send`, and a full channel drops the event instead of blocking the storage path.
-
 ## Testing
 
 113 Rust unit tests across `raid-rs` and `raid-cli` (`cargo test`), and 28 Go tests in `metrics-gateway` (`go test ./...`). Both suites run in GitLab CI, gated separately from linting (`clippy` for Rust, `go vet` for Go) and quality/security-audit jobs.
 
 ## Project structure
 
-```
+```text
 services/raid-simulator/   Rust workspace: raid-rs (engine) + raid-cli (FUSE binary)
 services/metrics-gateway/  Go telemetry gateway: gRPC ingest, Prometheus metrics, HTTP server
 api/proto/                 Shared protobuf definitions (metrics.v1)
