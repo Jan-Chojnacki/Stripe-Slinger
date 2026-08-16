@@ -8,45 +8,64 @@ Stripe Slinger simulates RAID 0, 1 and 3 behaviour, including live disk failure 
 
 ## Scope
 
-Stripe Slinger is a simulation and teaching environment, not a storage product. Disk images are regular files inside a Docker volume, not real block devices. The filesystem is flat: a single directory holding up to 128 files, with no subdirectories. RAID levels are limited to 0, 1 and 3, selected at mount time and fixed for the life of the mount.
+Stripe Slinger is a simulation and teaching environment, not a storage product. Disk images are regular files, not real block devices. The filesystem has a flat layout. It holds a single directory with up to 128 files and no subdirectories. RAID levels are limited to 0, 1 and 3, selected at mount time and fixed for the life of the mount.
 
 ## Features
 
 - RAID 0, 1 and 3 striping through a shared `Stripe` layout trait, selected with `--raid` (or the `RAID_LEVEL` environment variable)
-- Configurable disk count (1 to 8) and disk image size; RAID 0 additionally supports a single disk
+- Configurable disk count (1 to 8) and disk image size. RAID 0 additionally supports a single disk
 - FUSE-mounted filesystem (via the `fuser` crate) backed by memory-mapped disk image files, with a flat table of up to 128 files
-- A `.raidctl` control file in the mount root for live failure injection: writing a disk index hot-removes that disk, `replace <n>` and `swap <n>` replace and rebuild it, `rebuild <n>` rebuilds it in place; reading the file returns the command list and current disk status
+- A `.raidctl` control file in the mount root drives live failure injection. Writing a disk index hot-removes that disk, `replace <n>` and `swap <n>` replace and rebuild it, and `rebuild <n>` rebuilds it in place. Reading the file returns the command list and current disk status
 - A background worker that rebuilds stripes for disks flagged as needing repair and reports rebuild progress through metrics
-- FUSE/RAID/disk events streamed asynchronously over gRPC on a Unix domain socket; the channel is bounded and drops batches under backpressure instead of blocking storage I/O
-- Prometheus metrics for disk, RAID, FUSE and process-level activity, exposed over HTTP by the metrics gateway
+- FUSE, RAID and disk events are streamed asynchronously to the metrics gateway. The channel is bounded and drops batches under backpressure instead of blocking storage I/O
+- Prometheus metrics for disk, RAID, FUSE and process-level activity, exposed over HTTP by the metrics gateway at `/metrics`
 - Optional shared-secret authentication (`GRPC_AUTH_TOKEN`) on the gRPC stream between simulator and gateway
+- Optional gRPC rate limiting on the gateway (`GRPC_RATELIMIT_RPS`, `GRPC_RATELIMIT_BURST`), enforced per request and per stream message
 - A standalone synthetic metrics generator in both the Rust CLI (`raid-cli metrics`) and the Go gateway (`METRICS_ENABLE_SIMULATOR=true`), for exercising the telemetry pipeline without mounting a filesystem
 
 ## Tech stack
 
-- **Languages:** Rust 1.91 (`raid-rs` engine, `raid-cli` FUSE binary), Go 1.25 (`metrics-gateway`)
+- **Languages:** Rust 1.91, 2024 edition (`raid-rs` engine, `raid-cli` FUSE binary), and Go 1.25 (`metrics-gateway`)
 - **Rust:** fuser (FUSE bindings), memmap2, tokio, tonic and prost (gRPC), clap
 - **Go:** google.golang.org/grpc, prometheus/client_golang, golang.org/x/time/rate
 - **IPC:** gRPC over Unix domain sockets, service defined in `api/proto/metrics/v1/ingest.proto`
-- **Observability:** Prometheus client metrics, Grafana Alloy for scraping and remote-write, cAdvisor for container metrics, Grafana Cloud as the remote-write target
+- **Observability:** Prometheus client metrics, Grafana Alloy for scraping and remote write, cAdvisor for container metrics, Grafana Cloud as the remote-write target
 - **Infrastructure:** Docker Compose, Terraform (Grafana Cloud dashboards and alerts), GitLab CI
 
 ## Architecture
 
-Two services run as separate containers, connected only by a shared Unix domain socket and a single gRPC stream:
+The system runs as two Docker containers plus an observability sidecar:
 
 ```mermaid
 flowchart LR
-    fuse[raid-cli FUSE mount] -- NFS export --> host[Host mount point]
-    fuse -- gRPC over UDS --> gateway[metrics-gateway]
-    gateway -- "/metrics HTTP" --> alloy[Grafana Alloy]
-    cadvisor[cAdvisor] -- "/metrics HTTP" --> alloy
-    alloy -- remote_write --> cloud[(Grafana Cloud)]
+    subgraph raidsim["raid-simulator container"]
+        raidrs["raid-rs<br/>(stripe math, mmap disks)"]
+        raidcli["raid-cli<br/>(FUSE filesystem)"]
+        raidrs --> raidcli
+        raidcli -- "FUSE, then NFS export :2049" --> host["Host mount point<br/>storage/raid-data-host"]
+    end
+
+    subgraph gw["metrics-gateway container"]
+        grpcsrv["gRPC MetricsIngestor<br/>(UDS)"]
+        httpsrv["HTTP /metrics"]
+        grpcsrv --> httpsrv
+    end
+
+    raidcli -- "gRPC over UDS" --> grpcsrv
+
+    subgraph obs["observability"]
+        alloy["Grafana Alloy"]
+        cadvisor["cAdvisor"]
+    end
+
+    httpsrv -- scrape --> alloy
+    cadvisor -- scrape --> alloy
+    alloy -- remote_write --> cloud[("Grafana Cloud")]
 ```
 
-**raid-simulator** is split into two Rust crates. `raid-rs` holds the RAID striping math and the memory-mapped disk retention layer, with no FUSE dependency. `raid-cli` implements the FUSE filesystem on top of `raid-rs` using the `fuser` crate, and owns the metrics runtime that batches events and streams them to the gateway. The container mounts the filesystem with FUSE internally, then re-exports it over NFS so it can be mounted on the host (see the `mount` target in the Makefile, port 2049).
+**raid-simulator** is split into two Rust crates. `raid-rs` holds the RAID striping math and the memory-mapped disk retention layer, with no FUSE dependency. `raid-cli` implements the FUSE filesystem on top of `raid-rs` using the `fuser` crate, and owns the metrics runtime that batches events and streams them to the gateway. The container mounts the filesystem with FUSE internally, then re-exports it over NFS on port 2049 so it can be mounted on the host (see the `mount` target in the Makefile).
 
-**metrics-gateway** hosts a gRPC `MetricsIngestor` service on a Unix domain socket, updates Prometheus metric vectors from incoming batches, and serves them over HTTP. It can optionally run its own synthetic load generator instead of receiving real events.
+**metrics-gateway** hosts a gRPC `MetricsIngestor` service on a Unix domain socket, updates Prometheus metric vectors from incoming batches, and serves them over HTTP at `/metrics` (with a `/healthz` liveness endpoint alongside it). It can optionally run its own synthetic load generator instead of receiving real events.
 
 Grafana Alloy scrapes the gateway's `/metrics` endpoint and cAdvisor, then forwards everything to Grafana Cloud via remote write.
 
@@ -57,7 +76,7 @@ Requirements: Docker, Docker Compose, and `sudo` (the Makefile mounts the NFS ex
 1. Copy `.env.example` to `.env` and fill in the values you need (Grafana Cloud remote-write credentials for observability, `GRPC_AUTH_TOKEN` if you want the gRPC stream authenticated, `RAID_LEVEL` and `DISK_SIZE` to override the simulator defaults).
 2. `make up` builds and starts the containers, waits for the NFS port, mounts the export locally, and warms up the RAID controller.
 3. `make status` shows the mount state and container status.
-4. `make down` stops the environment; `make clean` additionally wipes the simulated disks and Alloy data.
+4. `make down` stops the environment. `make clean` additionally wipes the simulated disks and Alloy data.
 
 Run `make help` for the full list of targets, including `make docs-rust` and `make docs-go` for generated API documentation.
 
@@ -68,21 +87,21 @@ Run `make help` for the full list of targets, including `make docs-rust` and `ma
 | `GRAFANA_CLOUD_PROM_URL` | Remote-write endpoint for Grafana Cloud |
 | `GRAFANA_CLOUD_PROM_USERNAME` | Grafana Cloud Prometheus user ID |
 | `GRAFANA_CLOUD_PROM_PASSWORD` | Grafana Cloud API token (`metrics:write` scope) |
-| `GRPC_AUTH_TOKEN` | Shared secret for the gRPC metrics stream; leave empty to disable auth |
+| `GRPC_AUTH_TOKEN` | Shared secret for the gRPC metrics stream. Empty disables auth |
 | `RAID_LEVEL` | RAID mode to simulate (`raid0`, `raid1`, `raid3`) |
 | `DISK_SIZE` | Virtual disk size in bytes |
 | `METRICS_SOCKET_PATH` | Path to the shared gRPC Unix domain socket |
 
 ## Usage
 
-Once mounted, the filesystem behaves like any other directory. The `.raidctl` file drives failure injection and recovery:
+After `make up` finishes, the exported RAID filesystem is mounted on the host at `storage/raid-data-host` (relative to the repository root). The `.raidctl` file there drives failure injection and recovery:
 
 ```sh
-cat /mnt/raid/.raidctl              # show available commands and current disk status
-echo 1 > /mnt/raid/.raidctl         # hot-remove disk 1
-echo "replace 1" > /mnt/raid/.raidctl   # replace disk 1 and rebuild it
-echo "swap 1" > /mnt/raid/.raidctl      # fail, replace and rebuild disk 1 in one step
-echo "rebuild 1" > /mnt/raid/.raidctl   # rebuild disk 1 in place
+cat storage/raid-data-host/.raidctl              # show available commands and current disk status
+echo 1 > storage/raid-data-host/.raidctl         # hot-remove disk 1
+echo "replace 1" > storage/raid-data-host/.raidctl   # replace disk 1 and rebuild it
+echo "swap 1" > storage/raid-data-host/.raidctl      # fail, replace and rebuild disk 1 in one step
+echo "rebuild 1" > storage/raid-data-host/.raidctl   # rebuild disk 1 in place
 ```
 
 **RAID control and disk geometry:**
@@ -114,7 +133,7 @@ A few implementation choices the code makes worth calling out:
 - The simulator and gateway talk gRPC over a Unix domain socket rather than TCP, since both processes run on the same host.
 - Disk images are backed by memory-mapped files (`memmap2`), so the striping code reads and writes them as byte-addressable memory instead of managing explicit buffers.
 - Logical-to-physical offset translation (`raid-rs/src/retention/volume/mapper.rs`) is a stateless arithmetic mapping built from division and modulo against fixed stripe and chunk sizes, rather than a lookup table.
-- Metrics are best-effort: events are pushed onto bounded channels with `try_send`, and a full channel drops the event instead of blocking the storage path.
+- Metrics are best-effort. Events are pushed onto bounded channels with `try_send`, and a full channel drops the event instead of blocking the storage path.
 
 ## Testing
 
