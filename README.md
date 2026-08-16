@@ -69,40 +69,7 @@ flowchart LR
 
 Grafana Alloy scrapes the gateway's `/metrics` endpoint and cAdvisor, then forwards everything to Grafana Cloud via remote write.
 
-## Getting started
-
-Requirements: Docker, Docker Compose, and `sudo` (the Makefile mounts the NFS export locally).
-
-1. Copy `.env.example` to `.env` and fill in the values you need (Grafana Cloud remote-write credentials for observability, `GRPC_AUTH_TOKEN` if you want the gRPC stream authenticated, `RAID_LEVEL` and `DISK_SIZE` to override the simulator defaults).
-2. `make up` builds and starts the containers, waits for the NFS port, mounts the export locally, and warms up the RAID controller.
-3. `make status` shows the mount state and container status.
-4. `make down` stops the environment. `make clean` additionally wipes the simulated disks and Alloy data.
-
-Run `make help` for the full list of targets, including `make docs-rust` and `make docs-go` for generated API documentation.
-
-### Environment variables
-
-| Variable | Purpose |
-|---|---|
-| `GRAFANA_CLOUD_PROM_URL` | Remote-write endpoint for Grafana Cloud |
-| `GRAFANA_CLOUD_PROM_USERNAME` | Grafana Cloud Prometheus user ID |
-| `GRAFANA_CLOUD_PROM_PASSWORD` | Grafana Cloud API token (`metrics:write` scope) |
-| `GRPC_AUTH_TOKEN` | Shared secret for the gRPC metrics stream. Empty disables auth |
-| `RAID_LEVEL` | RAID mode to simulate (`raid0`, `raid1`, `raid3`) |
-| `DISK_SIZE` | Virtual disk size in bytes |
-| `METRICS_SOCKET_PATH` | Path to the shared gRPC Unix domain socket |
-
-## Usage
-
-After `make up` finishes, the exported RAID filesystem is mounted on the host at `storage/raid-data-host` (relative to the repository root). The `.raidctl` file there drives failure injection and recovery:
-
-```sh
-cat storage/raid-data-host/.raidctl              # show available commands and current disk status
-echo 1 > storage/raid-data-host/.raidctl         # hot-remove disk 1
-echo "replace 1" > storage/raid-data-host/.raidctl   # replace disk 1 and rebuild it
-echo "swap 1" > storage/raid-data-host/.raidctl      # fail, replace and rebuild disk 1 in one step
-echo "rebuild 1" > storage/raid-data-host/.raidctl   # rebuild disk 1 in place
-```
+## Screenshots
 
 **RAID control and disk geometry:**
 
