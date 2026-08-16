@@ -95,24 +95,27 @@ A few implementation choices the code makes worth calling out:
 
 ## Screenshots
 
-**RAID control and disk geometry:**
+**Terminal: `.raidctl` commands and per-disk status from the mounted filesystem:**
 
 ![RAID CLI Status](docs/screenshots/RAID_CLI_Status.png)
 
-**Global state dashboard while degraded:**
+**"Storage System Health & Performance" overview dashboard with the RAID state degraded:**
 
 ![System Health Degraded](docs/screenshots/System_Health_Degraded.png)
 
-**Telemetry after a state reset:**
-
-![Telemetry Gap Analysis](docs/screenshots/Telemetry_Gap_Analysis.png)
-![Monitoring State Reset](docs/screenshots/Monitoring_State_Reset.png)
-
-**Physical disk telemetry:**
+**The same overview dashboard with no data reported yet:**
 
 ![Physical Disk Telemetry](docs/screenshots/Physical_Disk_Telemetry.png)
 
-**RAID logic layer telemetry:**
+**"Filesystem Interface" dashboard: FUSE operation rates, IOPS, throughput and end-to-end latency:**
+
+![Monitoring State Reset](docs/screenshots/Monitoring_State_Reset.png)
+
+**"Physical Layer Analysis" dashboard, including the per-disk latency panels:**
+
+![Telemetry Gap Analysis](docs/screenshots/Telemetry_Gap_Analysis.png)
+
+**"Engine Deep-Dive" dashboard: RAID throughput and IOPS, with per-level panels for RAID 1 and RAID 3:**
 
 ![RAID Logic Deep Dive](docs/screenshots/RAID_Logic_Deep_Dive.png)
 
