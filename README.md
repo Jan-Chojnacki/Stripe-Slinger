@@ -140,23 +140,11 @@ cat .raidctl                # command help and live disk status
 
 Grafana Alloy scrapes the gateway and cAdvisor every five seconds and remote-writes to hosted Prometheus. The cAdvisor stream is filtered down to the simulator container and six metric names.
 
-Four dashboards cover 27 panels: a system overview, a physical disk view, a RAID engine view and a filesystem interface view.
-
-Overview, with a degraded array and two failed disks:
+Four dashboards cover 27 panels: a system overview, a physical disk view, a RAID engine view and a filesystem interface view. The overview below shows an array running degraded with two failed disks.
 
 ![Overview dashboard showing a degraded array](docs/screenshots/System_Health_Degraded.png)
 
-Physical disk layer, with per-disk IOPS, queue depth and p95 latency:
-
-![Physical disk layer dashboard](docs/screenshots/Telemetry_Gap_Analysis.png)
-
-Filesystem interface, with operation rates, throughput and end-to-end latency percentiles:
-
-![Filesystem interface dashboard](docs/screenshots/Monitoring_State_Reset.png)
-
-RAID engine, with logical IOPS and throughput:
-
-![RAID engine dashboard](docs/screenshots/RAID_Logic_Deep_Dive.png)
+The physical disk view breaks throughput, IOPS, queue depth and p95 latency down per disk. The RAID view shows logical IOPS and throughput for the array. The filesystem view shows operation rates and end-to-end latency percentiles as an application sees them.
 
 Four panels on the RAID engine dashboard are fed only by the synthetic generator. RAID 1 read distribution, RAID 3 parity reads, RAID 3 parity writes and RAID 3 partial stripe writes exist in the data contract, but the live engine does not populate them, so they stay empty when you drive the array through the mount.
 
